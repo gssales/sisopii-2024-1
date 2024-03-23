@@ -1,2 +1,3 @@
-´$ make docker run´
-# sisopii-2024-1
+# INF01151 - Sistemas Operacionais II
+
+`$ make docker run`
