@@ -1,0 +1,7 @@
+services:
+  host:
+    image: sleep-server
+    build: .
+    deploy:
+      mode: replicated
+      replicas: 2
