@@ -1,7 +1,12 @@
 services:
+  manager:
+    image: sleep-server
+    build: .
+    command: ./hello_world manager
   host:
     image: sleep-server
     build: .
+    command: ./hello_world participant
     deploy:
       mode: replicated
       replicas: 2
