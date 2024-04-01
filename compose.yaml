@@ -3,10 +3,15 @@ services:
     image: sleep-server
     build: .
     command: ./hello_world manager
+    stdin_open: true
+    tty: true
+    profiles: [manager]
   host:
     image: sleep-server
-    build: .
-    command: ./hello_world participant
+    command: ./hello_world srv
+    stdin_open: true
+    tty: true
+    profiles: [host]
     deploy:
       mode: replicated
-      replicas: 2
+      replicas: 1
