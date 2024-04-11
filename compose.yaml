@@ -2,16 +2,16 @@ services:
   manager:
     image: sleep-server
     build: .
-    command: ./hello_world manager
+    command: ./sleep_server manager
     stdin_open: true
     tty: true
     profiles: [manager]
   host:
     image: sleep-server
-    command: ./hello_world srv
-    stdin_open: true
-    tty: true
+    command: ./sleep_server srv
+    stdin_open: false
+    tty: false
     profiles: [host]
     deploy:
       mode: replicated
-      replicas: 1
+      replicas: 2

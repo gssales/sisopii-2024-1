@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <limits.h>
 
 #define PORT 50000
 
@@ -88,9 +89,13 @@ int main(int argc, const char *argv[]) {
 		serv_addr.sin_addr = *((struct in_addr *)server->h_addr);
 		bzero(&(serv_addr.sin_zero), 8);  
 
-		std::cout << "Enter the message: " << std::endl;
+		//std::cout << "Enter the message: " << std::endl;
 		bzero(buffer, 256);
-		fgets(buffer, 256, stdin);
+		//fgets(buffer, 256, stdin);
+		char hostname[HOST_NAME_MAX];
+		gethostname(hostname, HOST_NAME_MAX);
+    sprintf(buffer, "This is a message from ");
+		strcat(buffer, hostname);
 
 		n = sendto(sockfd, buffer, strlen(buffer), 0, (const struct sockaddr *) &serv_addr, sizeof(struct sockaddr_in));
 		if (n < 0) 
