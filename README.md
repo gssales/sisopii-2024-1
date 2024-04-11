@@ -16,6 +16,8 @@ $ make run _="manager -p 5000"
 Executa vários containers replicados:
 
 ```
-$ docker compose up --profile=manager -d
-$ docker compose up --profile=host -d
+$ docker compose --profile=manager up
+$ docker compose --profile=host up
 ```
+
+https://github.com/codeedu/wsl2-docker-quickstart?tab=readme-ov-file#1---instalar-o-docker-com-docker-engine-docker-nativo
