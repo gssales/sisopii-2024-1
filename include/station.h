@@ -58,6 +58,9 @@ public:
   */
   auto atomic_get(auto &&callback);
   void atomic_set(std::function<void(Station *)> callback);
+
+  StationType GetType() const { return this->type; }
+  void SetType(StationType type);
 };
 
 #endif

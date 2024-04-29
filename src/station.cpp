@@ -102,3 +102,7 @@ void Station::atomic_set(std::function<void(Station *)> callback)
   callback(this);
   mutex_station.unlock();
 }
+
+void Station::SetType(StationType type) {
+  atomic_set([&](Station *self) {self->type = type;});
+}
