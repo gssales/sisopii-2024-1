@@ -28,6 +28,7 @@ int main(int argc, const char *argv[]) {
 		data.length = strlen(message);
 		data.timestamp = now();
 		data.status = 100;
+		data.station = station->serialize();
 		struct network::packet res = network::udp_send(INADDR_BROADCAST, data);
 		std::cout << res.status << std::endl;
 	}

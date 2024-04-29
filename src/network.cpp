@@ -52,12 +52,15 @@ int network::udp_server(/*queue, mutex*/)
     struct sockaddr_in client_addr;
     struct packet client_data;
     socklen_t client_addr_len = sizeof(struct sockaddr_in);
+    Station client_station;
 
     int n = recvfrom(sockfd, &client_data, sizeof(struct packet), 0, (struct sockaddr *) &client_addr, &client_addr_len);
     if (n > 0)
     {
       std::cout << "(UDP Server) Message Received: " << std::endl;
       std::cout << client_data.message << std::endl << std::endl;
+      Station::deserialize(&client_station, client_data.station);
+      client_station.print();
 
       /** Proccess Request */
       process_request(&client_data);
@@ -80,7 +83,7 @@ int network::open_udp_socket()
       
   struct timeval timeout; // Needs a timeout to finish the program
   timeout.tv_sec = 10; // 10s timeout
-  timeout.tv_usec = 500000; // 10s timeout
+  timeout.tv_usec = 500000; // 500ms timeout
   int ret = setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
   if (ret < 0)
     std::cout << "ERROR option timeout errno: " << strerror(errno) << std::endl;

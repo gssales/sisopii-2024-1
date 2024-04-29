@@ -1,10 +1,8 @@
 #include "include/station.h"
 #include <unistd.h>
-#include <limits.h>
 #include <ifaddrs.h>
 #include <linux/if.h>
 #include <sys/ioctl.h>
-#include <arpa/inet.h>
 
 #include <cstring>
 #include <iostream>
@@ -86,6 +84,32 @@ void Station::print()
   std::cout << "MAC Address: " << this->macAddress << std::endl;
   std::cout << "Interface: " << this->interface << std::endl;
   std::cout << "IP Address: " << this->ipAddress << std::endl << std::endl;
+}
+
+struct station_serial Station::serialize()
+{
+  struct station_serial serialized;
+
+  serialized.pid = this->pid;
+  serialized.table_clock = this->table_clock;
+  serialized.type = this->type;
+  serialized.status = this->status;
+  strncpy(serialized.hostname, this->hostname.c_str(), HOST_NAME_MAX);
+  strncpy(serialized.ipAddress, this->ipAddress.c_str(), INET_ADDRSTRLEN);
+  strncpy(serialized.macAddress, this->macAddress.c_str(), MAC_ADDRESS_MAX);
+
+  return serialized;
+}
+
+void Station::deserialize(Station *station, struct station_serial serialized)
+{
+  station->pid = serialized.pid;
+  station->table_clock = serialized.table_clock;
+  station->type = serialized.type;
+  station->status = serialized.status;
+  station->hostname = std::string(serialized.hostname);
+  station->ipAddress = std::string(serialized.ipAddress);
+  station->macAddress = std::string(serialized.macAddress);
 }
 
 auto Station::atomic_get(auto &&callback)

@@ -4,6 +4,8 @@
 #include <string>
 #include <mutex>
 #include <functional>
+#include <limits.h>
+#include <arpa/inet.h>
 
 #define MAC_ADDRESS_MAX 18
 
@@ -48,10 +50,13 @@ private:
 
 public:
   
-  Station() {};
+  Station() {}
 
   void init();
   void print();
+  
+  struct station_serial serialize();
+  static void deserialize(Station* station, struct station_serial serialized);
   
   /**
    * USAR GET E SET atomico PARA A ESTAÇÃO ATUAL DO SISTEMA
@@ -61,6 +66,20 @@ public:
 
   StationType GetType() const { return this->type; }
   void SetType(StationType type);
+};
+
+/**
+ * Struct para enviar no pacote
+*/
+struct station_serial
+{
+  unsigned int pid;
+  unsigned int table_clock;
+  char hostname[HOST_NAME_MAX];
+  char ipAddress[INET_ADDRSTRLEN];
+  char macAddress[MAC_ADDRESS_MAX];
+  StationStatus status;
+  StationType type;
 };
 
 #endif

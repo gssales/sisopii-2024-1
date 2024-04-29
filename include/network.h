@@ -3,6 +3,8 @@
 
 #include <arpa/inet.h>
 
+#include "include/station.h"
+
 namespace network
 {  
   const int PORT = 50505;
@@ -14,6 +16,7 @@ namespace network
     unsigned long timestamp; // Timestamp do dado
     unsigned short status; //Status da mensagem
     char message[255]; //Dados da mensagem
+    station_serial station;
   };
 
   void tcp_server(/*queue, mutex*/);
