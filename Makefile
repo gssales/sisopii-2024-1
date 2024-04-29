@@ -1,20 +1,17 @@
 CXX=g++
-CXXFLAGS=-std=c++23 -Wall -Wextra -g
+CXXFLAGS=-std=c++23 -Wall -Wextra -I. -g
 BIN=sleep_server
 CNT=docker
 IMG=sleep-server
 
-SRC=$(wildcard *.cpp)
+SRC=$(wildcard src/*.cpp)
 OBJ=$(SRC:%.cpp=%.o)
 
 all: $(OBJ)
-	$(CXX) -o $(BIN) $^
-
-%.o: %.c
-	$(CXX) $@ -c $<
+	$(CXX) $(CXXFLAGS) -o $(BIN) $^
 
 clean:
-	rm -f *.o $(BIN)
+	rm -f **/*.o $(BIN)
 
 image:
 	$(CNT) build -t $(IMG) .
