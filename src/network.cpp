@@ -5,6 +5,9 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <errno.h>
+#include <functional>
+#include <thread>
+#include <chrono>
 
 using namespace network;
 
@@ -12,7 +15,7 @@ struct packet network::udp_send(in_addr_t address, struct packet data)
 {
   int sockfd = network::open_udp_socket();
 
-  struct sockaddr_in sock_addr = socket_address(address);
+  struct sockaddr_in sock_addr = socket_address(address, PORT_client);
   int n = sendto(sockfd, &data, sizeof(data), 0, (const struct sockaddr *) &sock_addr, sizeof(struct sockaddr_in));
   if (n < 0) 
     std::cout << "ERROR sending message" << std::endl;
@@ -33,19 +36,34 @@ struct packet network::udp_send(in_addr_t address, struct packet data)
   return response;
 }
 
-int process_request(struct packet *request)
+void *process_request(struct packet *request, std::function<void(struct packet *)> resolve)
 {
   request->status = 200;
-  return 200;
+	
+	resolve(request);
+	return 0;
 }
 
-int network::udp_server(/*queue, mutex*/)
+void network::spawn_resolve_detached(int sockfd, struct sockaddr_in client_addr, struct packet *request_data)
+{
+	auto resolve_callback = [sockfd, client_addr](struct packet *response_data) 
+	{
+		int n = sendto(sockfd, response_data, sizeof(struct packet), 0, (struct sockaddr *) &client_addr, sizeof(struct sockaddr));
+		if (n  < 0) 
+			printf("ERROR on sendto");
+	};
+
+	std::thread process_thread (&process_request, request_data, resolve_callback);
+	process_thread.detach();
+}
+
+void *network::udp_server(/*queue, mutex*/)
 {
   int sockfd = network::open_udp_socket();
   
-  struct sockaddr_in bound_addr = socket_address(INADDR_ANY);
+  struct sockaddr_in bound_addr = socket_address(INADDR_ANY, PORT_server);
   if (bind(sockfd, (struct sockaddr *) &bound_addr, sizeof(struct sockaddr)) < 0) 
-    std::cerr << "ERROR binding socket" << std::endl;
+    std::cerr << "ERROR binding socket: " << strerror(errno) << std::endl;
 
   while (1 /* station status != EXITING */)
   {
@@ -62,12 +80,7 @@ int network::udp_server(/*queue, mutex*/)
       Station::deserialize(&client_station, client_data.station);
       client_station.print();
 
-      /** Proccess Request */
-      process_request(&client_data);
-
-      n = sendto(sockfd, &client_data, sizeof(struct packet), 0,(struct sockaddr *) &client_addr, sizeof(struct sockaddr));
-      if (n  < 0) 
-        printf("ERROR on sendto");
+			network::spawn_resolve_detached(sockfd, client_addr, &client_data);
     }
   }
 
@@ -79,7 +92,7 @@ int network::open_udp_socket()
 {
   int sockfd;
   if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) 
-    std::cerr << "ERROR opening socket" << std::endl;
+    std::cerr << "ERROR opening socket: " << strerror(sockfd) << std::endl;
       
   struct timeval timeout; // Needs a timeout to finish the program
   timeout.tv_sec = 10; // 10s timeout
@@ -96,11 +109,11 @@ int network::open_udp_socket()
   return sockfd;
 }
 
-struct sockaddr_in network::socket_address(in_addr_t addr)
+struct sockaddr_in network::socket_address(in_addr_t addr, int port)
 {
   struct sockaddr_in address;
   address.sin_family = AF_INET;     
-  address.sin_port = htons(PORT);
+  address.sin_port = htons(port);
   address.sin_addr.s_addr = addr;
   memset(&(address.sin_zero), 0, 8);
   return address;

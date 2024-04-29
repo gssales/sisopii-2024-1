@@ -8,6 +8,8 @@
 namespace network
 {  
   const int PORT = 50505;
+	int tcp_socket_fd = -1;
+	int udp_socket_fd = -1;
 
   struct packet
   {
@@ -19,17 +21,37 @@ namespace network
     station_serial station;
   };
 
+  int open_tcp_socket();
   void tcp_server(/*queue, mutex*/);
   /*message*/ void tcp_send(/*message*/); // async
 
-  int open_tcp_socket();
+	class NetworkService
+	{
+	public:
+		void *server(/*subservice*/);
+		packet request(in_addr_t server_address, packet request_data);
 
-  int udp_server(/*queue, mutex*/);
-  struct packet udp_send(in_addr_t address, struct packet data); // async
+		void call_resolve(int sockfd, struct sockaddr_in client_addr, struct packet *request_data);
+	}
+
+	class UDPService
+	{
+	public:
+		void *server(/*subservice*/);
+		packet request(in_addr_t server_address, packet request_data);
+
+		void call_resolve(int sockfd, struct sockaddr_in client_addr, struct packet *request_data);
+	}
+
 
   int open_udp_socket();
+  void *udp_server(/*queue, mutex*/);
+  struct packet udp_send(in_addr_t address, struct packet data); // async
 
-  struct sockaddr_in socket_address(in_addr_t addr);
+
+  struct sockaddr_in socket_address(in_addr_t addr, int port);
+
+	void spawn_resolve_detached(int sockfd, struct sockaddr_in client_addr, struct packet *request_data);
 
 };
 

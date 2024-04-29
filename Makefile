@@ -1,7 +1,7 @@
 CXX=g++
 CXXFLAGS=-std=c++23 -Wall -Wextra -I. -g
 BIN=sleep_server
-CNT=docker
+CNT=nerdctl
 IMG=sleep-server
 
 SRC=$(wildcard src/*.cpp)

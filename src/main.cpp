@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstring>
+#include <thread>
 
 #include "include/station.h"
 #include "include/network.h"
@@ -15,11 +16,9 @@ int main(int argc, const char *argv[]) {
 
 	station->print();
 
-	if (station->GetType() == MANAGER) 
-	{
-		network::udp_server();
-	}
-	else
+	auto udp_thread = std::thread(&network::udp_server);
+	
+	if (station->GetType() != MANAGER) 
 	{
 		struct network::packet data;
 		char message[255] = "Hey I'm the Participant";
@@ -32,6 +31,8 @@ int main(int argc, const char *argv[]) {
 		struct network::packet res = network::udp_send(INADDR_BROADCAST, data);
 		std::cout << res.status << std::endl;
 	}
+
+	udp_thread.join();
 
 	return 0;
 }
