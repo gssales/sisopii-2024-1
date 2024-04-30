@@ -8,8 +8,6 @@
 namespace network
 {  
   const int PORT = 50505;
-	int tcp_socket_fd = -1;
-	int udp_socket_fd = -1;
 
   struct packet
   {
@@ -20,38 +18,40 @@ namespace network
     char message[255]; //Dados da mensagem
     station_serial station;
   };
+  
+  struct sockaddr_in socket_address(in_addr_t addr);
 
-  int open_tcp_socket();
-  void tcp_server(/*queue, mutex*/);
-  /*message*/ void tcp_send(/*message*/); // async
-
-	class NetworkService
+	class TCPService
 	{
+  private:
+    int sockfd = -1;
+
 	public:
 		void *server(/*subservice*/);
-		packet request(in_addr_t server_address, packet request_data);
+		struct packet request(in_addr_t server_address, struct packet request_data);
 
 		void call_resolve(int sockfd, struct sockaddr_in client_addr, struct packet *request_data);
-	}
+	};
 
 	class UDPService
 	{
+  private:
+    int sockfd = -1;
+
 	public:
+    UDPService();
+    ~UDPService();
+
 		void *server(/*subservice*/);
-		packet request(in_addr_t server_address, packet request_data);
 
-		void call_resolve(int sockfd, struct sockaddr_in client_addr, struct packet *request_data);
-	}
+		void call_resolve(sockaddr_in client_addr, struct packet request_data, std::function<void(struct packet, std::function<void(struct packet)>)> callback);
+	};
+  void *udp_server();
+  void udp_call_resolve(int sockfd, sockaddr_in client_addr, struct packet request_data, std::function<void(struct packet, std::function<void(struct packet)>)> callback);
 
-
-  int open_udp_socket();
-  void *udp_server(/*queue, mutex*/);
-  struct packet udp_send(in_addr_t address, struct packet data); // async
-
-
-  struct sockaddr_in socket_address(in_addr_t addr, int port);
-
-	void spawn_resolve_detached(int sockfd, struct sockaddr_in client_addr, struct packet *request_data);
+  int open_socket(int sock_type);
+	struct packet datagram(in_addr_t address, struct packet data);
+	struct packet packet(in_addr_t address, struct packet data);
 
 };
 
