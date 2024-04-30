@@ -82,7 +82,7 @@ struct packet network::packet(in_addr_t address, struct packet data)
 }
 
 
-void *network::udp_server()
+void *network::udp_server(Station *station)
 {
   int sockfd = open_socket(SOCK_DGRAM);
 
@@ -99,6 +99,9 @@ void *network::udp_server()
     int n = recvfrom(sockfd, &client_data, sizeof(struct packet), 0, (struct sockaddr *) &client_addr, &client_addr_len);
     if (n > 0)
     {
+			if (client_addr.sin_addr.s_addr == station->GetInAddr())
+				continue;
+
       std::cout << "(UDP Server) Message Received: " << std::endl;
       std::cout << client_data.message << std::endl << std::endl;
       

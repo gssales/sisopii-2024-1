@@ -24,7 +24,7 @@ namespace network
   void *tcp_server();
   void tcp_call_resolve(int sockfd, sockaddr_in client_addr, struct packet request_data, std::function<void(struct packet, std::function<void(struct packet)>)> callback);
 
-  void *udp_server();
+  void *udp_server(Station *station);
   void udp_call_resolve(int sockfd, sockaddr_in client_addr, struct packet request_data, std::function<void(struct packet, std::function<void(struct packet)>)> callback);
 
   int open_socket(int sock_type);

@@ -30,8 +30,11 @@ void Station::findIPAddress()
     {
       if (strncmp("en", addr->ifa_name, 2) == 0 || strncmp("eth", addr->ifa_name, 3) == 0)
       {
+				struct sockaddr_in *sock_addr = (struct sockaddr_in *)addr->ifa_addr;
+				this->s_addr = sock_addr->sin_addr.s_addr;
+
         char ipAddress[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET, &((struct sockaddr_in *)addr->ifa_addr)->sin_addr, ipAddress, INET_ADDRSTRLEN);
+        inet_ntop(AF_INET, &sock_addr->sin_addr, ipAddress, INET_ADDRSTRLEN);
         this->ipAddress = ipAddress;
         break;
       }

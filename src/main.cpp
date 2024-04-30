@@ -16,7 +16,7 @@ int main(int argc, const char *argv[]) {
 	station->print();
 
 
-	auto udp_thread = std::thread(&network::udp_server);
+	auto udp_thread = std::thread(&network::udp_server, station);
 	
 	if (station->GetType() != MANAGER) 
 	{

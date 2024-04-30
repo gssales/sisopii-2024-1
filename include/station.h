@@ -40,6 +40,7 @@ private:
 
   std::string macAddress;
   std::string ipAddress;
+	in_addr_t s_addr;
   std::string hostname;
 
   std::mutex mutex_station;
@@ -66,6 +67,8 @@ public:
 
   StationType GetType() const { return this->type; }
   void SetType(StationType type);
+
+	in_addr_t GetInAddr() const { return this->s_addr; }
 };
 
 /**
