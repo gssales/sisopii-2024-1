@@ -22,36 +22,39 @@ void *process_request(struct packet request, std::function<void(struct packet)> 
 
 void *tcp_server(/*subservice*/)
 {
-  int sockfd = open_socket(SOCK_DGRAM);
+	// TODO implement non blocking accept
+	
+  // int sockfd = open_socket(SOCK_DGRAM);
 
-  struct sockaddr_in bound_addr = socket_address(INADDR_ANY);
-  if (bind(sockfd, (struct sockaddr *) &bound_addr, sizeof(struct sockaddr)) == -1) 
-    std::cerr << "ERROR binding socket: " << strerror(errno) << std::endl;
+  // struct sockaddr_in bound_addr = socket_address(INADDR_ANY);
+  // if (bind(sockfd, (struct sockaddr *) &bound_addr, sizeof(struct sockaddr)) == -1) 
+  //   std::cerr << "ERROR binding socket: " << strerror(errno) << std::endl;
     
-  if (listen(sockfd, 10) == -1) 
-    std::cerr << "ERROR listen: " << strerror(errno) << std::endl;
+  // if (listen(sockfd, 10) == -1) 
+  //   std::cerr << "ERROR listen: " << strerror(errno) << std::endl;
 
-  while (1 /* station status != EXITING */)
-  {
-    struct sockaddr_in client_addr;
-    socklen_t client_addr_len = sizeof(struct sockaddr_in);
-    if (accept())
+  // while (1 /* station status != EXITING */)
+  // {
+  //   struct sockaddr_in client_addr;
+  //   socklen_t client_addr_len = sizeof(struct sockaddr_in);
+  //   if (accept())
 
-    struct packet client_data;
+  //   struct packet client_data;
 
-    int n = recvfrom(this->sockfd, &client_data, sizeof(struct packet), 0, (struct sockaddr *) &client_addr, &client_addr_len);
-    if (n > 0)
-    {
-      std::cout << "(UDP Server) Message Received: " << std::endl;
-      std::cout << client_data.message << std::endl << std::endl;
+  //   int n = recvfrom(this->sockfd, &client_data, sizeof(struct packet), 0, (struct sockaddr *) &client_addr, &client_addr_len);
+  //   if (n > 0)
+  //   {
+  //     std::cout << "(UDP Server) Message Received: " << std::endl;
+  //     std::cout << client_data.message << std::endl << std::endl;
       
-      Station client_station;
-      Station::deserialize(&client_station, client_data.station);
-      client_station.print();
+  //     Station client_station;
+  //     Station::deserialize(&client_station, client_data.station);
+  //     client_station.print();
 
-			this->call_resolve(client_addr, client_data, process_request);
-    }
-  }
+	// 		this->call_resolve(client_addr, client_data, process_request);
+  //   }
+  // }
+	return 0;
 }
 
 struct packet network::packet(in_addr_t address, struct packet data)

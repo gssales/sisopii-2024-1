@@ -21,31 +21,9 @@ namespace network
   
   struct sockaddr_in socket_address(in_addr_t addr);
 
-	class TCPService
-	{
-  private:
-    int sockfd = -1;
+  void *tcp_server();
+  void tcp_call_resolve(int sockfd, sockaddr_in client_addr, struct packet request_data, std::function<void(struct packet, std::function<void(struct packet)>)> callback);
 
-	public:
-		void *server(/*subservice*/);
-		struct packet request(in_addr_t server_address, struct packet request_data);
-
-		void call_resolve(int sockfd, struct sockaddr_in client_addr, struct packet *request_data);
-	};
-
-	class UDPService
-	{
-  private:
-    int sockfd = -1;
-
-	public:
-    UDPService();
-    ~UDPService();
-
-		void *server(/*subservice*/);
-
-		void call_resolve(sockaddr_in client_addr, struct packet request_data, std::function<void(struct packet, std::function<void(struct packet)>)> callback);
-	};
   void *udp_server();
   void udp_call_resolve(int sockfd, sockaddr_in client_addr, struct packet request_data, std::function<void(struct packet, std::function<void(struct packet)>)> callback);
 

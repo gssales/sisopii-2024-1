@@ -15,9 +15,8 @@ int main(int argc, const char *argv[]) {
 		station->SetType(MANAGER);
 	station->print();
 
-	auto udp_server = network::UDPService();
 
-	auto udp_thread = std::thread(&network::UDPService::server, udp_server);
+	auto udp_thread = std::thread(&network::udp_server);
 	
 	if (station->GetType() != MANAGER) 
 	{
@@ -29,7 +28,7 @@ int main(int argc, const char *argv[]) {
 		data.timestamp = now();
 		data.status = 100;
 		data.station = station->serialize();
-		auto res = udp_server.request(INADDR_BROADCAST, data);
+		auto res = network::datagram(INADDR_BROADCAST, data);
 		std::cout << "Response Status: " << res.status << std::endl;
 	}
 
