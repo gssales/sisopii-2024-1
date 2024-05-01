@@ -12,7 +12,7 @@
 enum StationType : uint8_t 
 {
   MANAGER,
-  PARTICIPANT,
+  HOST,
   CANDIDATE
 };
 
@@ -29,10 +29,10 @@ class Station
 {
 private:
   unsigned int pid = 0;
-  unsigned int table_clock = 0;
+  unsigned int clock = 0;
   bool debug = false;
 
-  StationType type = PARTICIPANT;
+  StationType type = HOST;
   StationStatus status = AWAKEN;
 
   Station *manager;
@@ -65,10 +65,17 @@ public:
   auto atomic_get(auto &&callback);
   void atomic_set(std::function<void(Station *)> callback);
 
+	Station* GetManager() const { return this->manager; }
+  void SetManager(Station *manager);
+
   StationType GetType() const { return this->type; }
   void SetType(StationType type);
 
 	in_addr_t GetInAddr() const { return this->s_addr; }
+
+	unsigned int GetClock() const { return this->clock; }
+
+	in_addr_t GetStatus() const { return this->status; }
 };
 
 /**
@@ -77,7 +84,7 @@ public:
 struct station_serial
 {
   unsigned int pid;
-  unsigned int table_clock;
+  unsigned int clock;
   char hostname[HOST_NAME_MAX];
   char ipAddress[INET_ADDRSTRLEN];
   char macAddress[MAC_ADDRESS_MAX];

@@ -3,7 +3,6 @@
 #include <ifaddrs.h>
 #include <linux/if.h>
 #include <sys/ioctl.h>
-
 #include <cstring>
 #include <iostream>
 
@@ -40,6 +39,7 @@ void Station::findIPAddress()
       }
     }
   }
+  freeifaddrs(addrs);
 }
 
 void Station::findInterfaceName()
@@ -48,6 +48,13 @@ void Station::findInterfaceName()
   getifaddrs(&addrs);
   for (struct ifaddrs *addr = addrs; addr != nullptr; addr = addr->ifa_next) 
   {
+    // if (addr->ifa_addr && addr->ifa_addr->sa_family == AF_LINK) 
+    // {
+		// 	unsigned char *ptr = (unsigned char *)LLADDR((struct sockaddr_dl *)(addr)->ifa_addr);
+		// 	printf("%s: %02x:%02x:%02x:%02x:%02x:%02x\n",
+		// 											(addr)->ifa_name,
+		// 											*ptr, *(ptr+1), *(ptr+2), *(ptr+3), *(ptr+4), *(ptr+5));
+		// }
     if (addr->ifa_addr && addr->ifa_addr->sa_family == AF_PACKET) 
     {
       if (strncmp("en", addr->ifa_name, 2) == 0 || strncmp("eth", addr->ifa_name, 3) == 0)
@@ -94,7 +101,7 @@ struct station_serial Station::serialize()
   struct station_serial serialized;
 
   serialized.pid = this->pid;
-  serialized.table_clock = this->table_clock;
+  serialized.clock = this->clock;
   serialized.type = this->type;
   serialized.status = this->status;
   strncpy(serialized.hostname, this->hostname.c_str(), HOST_NAME_MAX);
@@ -107,7 +114,7 @@ struct station_serial Station::serialize()
 void Station::deserialize(Station *station, struct station_serial serialized)
 {
   station->pid = serialized.pid;
-  station->table_clock = serialized.table_clock;
+  station->clock = serialized.clock;
   station->type = serialized.type;
   station->status = serialized.status;
   station->hostname = std::string(serialized.hostname);
@@ -132,4 +139,8 @@ void Station::atomic_set(std::function<void(Station *)> callback)
 
 void Station::SetType(StationType type) {
   atomic_set([&](Station *self) {self->type = type;});
+}
+
+void Station::SetManager(Station *manager) {
+  atomic_set([&](Station *self) {self->manager = manager;});
 }
