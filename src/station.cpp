@@ -144,3 +144,7 @@ void Station::SetType(StationType type) {
 void Station::SetManager(Station *manager) {
   atomic_set([&](Station *self) {self->manager = manager;});
 }
+
+void Station::SetStatus(StationStatus status) {
+  atomic_set([&](Station *self) {self->status = status;});
+}

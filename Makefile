@@ -8,7 +8,7 @@ SRC=$(wildcard src/*.cpp)
 OBJ=$(SRC:%.cpp=%.o)
 
 all: $(OBJ)
-	$(CXX) $(CXXFLAGS) -o $(BIN) $^
+	$(CXX) -o $(BIN) $^
 
 clean:
 	rm -f **/*.o $(BIN)

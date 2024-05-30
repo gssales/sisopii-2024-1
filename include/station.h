@@ -40,7 +40,7 @@ private:
 
   std::string macAddress;
   std::string ipAddress;
-	in_addr_t s_addr;
+  in_addr_t s_addr;
   std::string hostname;
 
   std::mutex mutex_station;
@@ -65,17 +65,18 @@ public:
   auto atomic_get(auto &&callback);
   void atomic_set(std::function<void(Station *)> callback);
 
-	Station* GetManager() const { return this->manager; }
+  Station* GetManager() const { return this->manager; }
   void SetManager(Station *manager);
 
   StationType GetType() const { return this->type; }
   void SetType(StationType type);
 
-	in_addr_t GetInAddr() const { return this->s_addr; }
+  in_addr_t GetInAddr() const { return this->s_addr; }
 
-	unsigned int GetClock() const { return this->clock; }
+  unsigned int GetClock() const { return this->clock; }
 
-	in_addr_t GetStatus() const { return this->status; }
+  StationStatus GetStatus() const { return this->status; }
+  void SetStatus(StationStatus status);
 };
 
 /**
