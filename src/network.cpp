@@ -10,65 +10,105 @@
 #include <chrono>
 
 #include "include/discovery.h"
+#include "include/monitoring.h"
 #include "include/utils.h"
+
+packet_t create_error_packet(char* message)
+{
+  packet_t p;
+  p.type = UNKNOWN;
+  p.timestamp = now();
+  p.status = FAIL;
+  p.length = strlen(message);
+  strcpy(p.message, message);
+  return p;
+}
 
 using namespace network;
 
-void *tcp_server(/*subservice*/)
+void *network::tcp_server(Station *station)
 {
-	// TODO implement non blocking accept
-	
-  // int sockfd = open_socket(SOCK_DGRAM);
+  int sockfd = open_socket(SOCK_STREAM);
 
-  // struct sockaddr_in bound_addr = socket_address(INADDR_ANY);
-  // if (bind(sockfd, (struct sockaddr *) &bound_addr, sizeof(struct sockaddr)) == -1) 
-  //   std::cerr << "ERROR binding socket: " << strerror(errno) << std::endl;
+  struct sockaddr_in bound_addr = socket_address(INADDR_ANY, TCP_PORT);
+  if (bind(sockfd, (struct sockaddr *) &bound_addr, sizeof(struct sockaddr)) == -1) 
+    std::cerr << "ERROR binding socket: " << strerror(errno) << std::endl;
     
-  // if (listen(sockfd, 10) == -1) 
-  //   std::cerr << "ERROR listen: " << strerror(errno) << std::endl;
+  if (listen(sockfd, 10) == -1) 
+    std::cerr << "ERROR listen: " << strerror(errno) << std::endl;
 
-  // while (1 /* station status != EXITING */)
-  // {
-  //   struct sockaddr_in client_addr;
-  //   socklen_t client_addr_len = sizeof(struct sockaddr_in);
-  //   if (accept())
+  while (1 /* station status != EXITING */)
+  {
+    struct sockaddr_in client_addr;
+    socklen_t client_addr_len = sizeof(struct sockaddr_in);
 
-  //   struct packet client_data;
+    int client_sockfd = accept(sockfd, (struct sockaddr *) &client_addr, &client_addr_len);
+    if (client_sockfd != -1)
+    {
+      if (client_addr.sin_addr.s_addr == station->GetInAddr())
+        continue;
 
-  //   int n = recvfrom(this->sockfd, &client_data, sizeof(struct packet), 0, (struct sockaddr *) &client_addr, &client_addr_len);
-  //   if (n > 0)
-  //   {
-  //     std::cout << "(UDP Server) Message Received: " << std::endl;
-  //     std::cout << client_data.message << std::endl << std::endl;
-      
-  //     Station client_station;
-  //     Station::deserialize(&client_station, client_data.station);
-  //     client_station.print();
+      struct packet client_data;
+      int n = read(client_sockfd, &client_data, sizeof(struct packet));
+      if (n > 0)
+      {
+        switch (client_data.type)
+        {
+        case MONITORING_REQUEST:
+        case MONITORING_RESPONSE:
+          tcp_call_resolve(client_sockfd, client_addr, station, client_data, monitoring::process_request);
+          break;
+        
+        default:
+          break;
+        }
+      }
+    }
+  }
+  close(sockfd);
+}
 
-	// 		this->call_resolve(client_addr, client_data, process_request);
-  //   }
-  // }
-	return 0;
+void network::tcp_call_resolve(int client_sockfd, sockaddr_in client_addr, Station *station, packet_t request_data, std::function<void(Station*, packet_t, std::function<void(packet_t)>)> callback)
+{
+	auto resolve_callback = [client_sockfd, client_addr](packet_t response_data) 
+	{
+    int n = write(client_sockfd, &response_data, sizeof(packet_t));
+		if (n  < 0) 
+			std::cerr << "ERROR on writing to socket: " << strerror(errno) << std::endl;
+    
+    close(client_sockfd);
+	};
+
+	std::thread process_thread (callback, station, request_data, resolve_callback);
+	process_thread.detach();
 }
 
 packet_t network::packet(in_addr_t address, packet_t data)
 {
   int sockfd = open_socket(SOCK_STREAM);
 
-  struct sockaddr_in sock_addr = socket_address(address);
-  if (connect(sockfd, (const struct sockaddr *) &sock_addr, sizeof(sock_addr)) != 0)
+  struct sockaddr_in sock_addr = socket_address(address, TCP_PORT);
+  if (connect(sockfd, (const struct sockaddr *) &sock_addr, sizeof(sock_addr)) != 0) 
+  {
 		std::cerr << "ERROR on connect: " << strerror(errno) << std::endl;
+    close(sockfd);
+    return create_error_packet(strerror(errno));
+  }
 
   int n = write(sockfd, &data, sizeof(data));
-  if (n < 0)
+  if (n < 0) 
+  {
 		std::cerr << "ERROR on write: " << strerror(errno) << std::endl;
+    close(sockfd);
+    return create_error_packet(strerror(errno));
+  }
 
   packet_t response;
 	n = read(sockfd, &response, sizeof(packet_t));
 	if (n < 0)
   {
 		std::cerr << "ERROR on read: " << strerror(errno) << std::endl;
-    response.status = FAIL;
+    response = create_error_packet(strerror(errno));
   }
 
   close(sockfd);
@@ -80,7 +120,7 @@ void *network::udp_server(Station *station)
 {
   int sockfd = open_socket(SOCK_DGRAM);
 
-  struct sockaddr_in bound_addr = socket_address(INADDR_ANY);
+  struct sockaddr_in bound_addr = socket_address(INADDR_ANY, UDP_PORT);
   if (bind(sockfd, (struct sockaddr *) &bound_addr, sizeof(struct sockaddr)) == -1) 
     std::cerr << "ERROR binding socket: " << strerror(errno) << std::endl;
 
@@ -108,6 +148,7 @@ void *network::udp_server(Station *station)
 			}
     }
   }
+  close(sockfd);
 }
 
 void network::udp_call_resolve(int sockfd, sockaddr_in client_addr, Station *station, packet_t request_data, std::function<void(Station*, packet_t, std::function<void(packet_t)>)> callback)
@@ -127,10 +168,14 @@ packet_t network::datagram(in_addr_t address, packet_t data)
 {
   int sockfd = open_socket(SOCK_DGRAM);
 
-  struct sockaddr_in sock_addr = socket_address(address);
+  struct sockaddr_in sock_addr = socket_address(address, UDP_PORT);
   int n = sendto(sockfd, &data, sizeof(data), 0, (const struct sockaddr *) &sock_addr, sizeof(struct sockaddr_in));
-  if (n < 0) 
-		std::cerr << "ERROR on sendto: " << strerror(errno) << std::endl;
+	if (n < 0)
+  {
+  	std::cerr << "ERROR on sendto: " << strerror(errno) << std::endl;
+    close(sockfd);
+    return create_error_packet(strerror(errno));
+  }
     
   packet_t response;
   struct sockaddr_in from_addr;
@@ -139,7 +184,7 @@ packet_t network::datagram(in_addr_t address, packet_t data)
 	if (n < 0)
   {
 		std::cerr << "ERROR on recvfrom: " << strerror(errno) << std::endl;
-    response.status = FAIL;
+    response = create_error_packet(strerror(errno));
   }
 
   close(sockfd);
@@ -179,11 +224,11 @@ int network::open_socket(int sock_type)
   return sockfd;
 }
 
-struct sockaddr_in network::socket_address(in_addr_t addr)
+struct sockaddr_in network::socket_address(in_addr_t addr, const int port)
 {
   struct sockaddr_in address;
   address.sin_family = AF_INET;     
-  address.sin_port = htons(PORT);
+  address.sin_port = htons(port);
   address.sin_addr.s_addr = addr;
   memset(&(address.sin_zero), 0, 8);
   return address;

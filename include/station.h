@@ -1,6 +1,9 @@
 #ifndef _STATION_H
 #define _STATION_H
 
+#include <map>
+#include <list>
+#include <utility>
 #include <string>
 #include <mutex>
 #include <functional>
@@ -25,6 +28,8 @@ enum StationStatus : uint8_t
   EXITING
 };
 
+class StationTable;
+
 class Station
 {
 private:
@@ -35,6 +40,7 @@ private:
   StationType type = HOST;
   StationStatus status = AWAKEN;
 
+  StationTable *station_table;
   Station *manager;
   std::string interface;
 
@@ -58,7 +64,7 @@ public:
   
   struct station_serial serialize();
   static void deserialize(Station* station, struct station_serial serialized);
-  
+
   /**
    * USAR GET E SET atomico PARA A ESTAÇÃO ATUAL DO SISTEMA
   */
@@ -73,10 +79,15 @@ public:
 
   in_addr_t GetInAddr() const { return this->s_addr; }
 
+  std::string GetMacAddress() const { return this->macAddress; }
+
   unsigned int GetClock() const { return this->clock; }
 
   StationStatus GetStatus() const { return this->status; }
   void SetStatus(StationStatus status);
+
+  StationTable* GetStationTable() const { return this->station_table; }
+  void SetStationTable(StationTable *station_table);
 };
 
 /**
@@ -91,6 +102,38 @@ struct station_serial
   char macAddress[MAC_ADDRESS_MAX];
   StationStatus status;
   StationType type;
+};
+
+/**
+ * Struct para armazenar
+*/
+struct station_item
+{
+  u_int64_t last_update;
+  u_int8_t retry_counter;
+};
+
+class StationTable
+{
+  public:
+    unsigned long clock;
+    std::mutex lock;
+    bool has_update;
+    std::map<std::string, std::pair<station_serial, station_item>> table;
+
+    StationTable()
+    {   
+      this->clock = 0;
+      this->has_update = false;
+    }
+
+    std::list<std::pair<station_serial, station_item>> getValues();
+    bool has(std::string key);
+    
+    void insert(std::string key, station_serial item);
+    void remove(std::string key);
+    void update(std::string key, StationStatus new_status, StationType new_type);
+    void update_retry(std::string key, u_int8_t retry_counter);
 };
 
 #endif

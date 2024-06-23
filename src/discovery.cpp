@@ -38,7 +38,6 @@ void discovery::proc_host(Station *station)
 		auto response = network::datagram(INADDR_BROADCAST, discovery_request);
 		if (response.type == network::DISCOVERY_RESPONSE && response.status == network::SUCCESS)
 		{
-			std::cout << "New Manager Found!" << std::endl;
 			Station manager;
 			Station::deserialize(&manager, response.station);
 			station->SetManager(&manager);
@@ -57,7 +56,7 @@ void *discovery::process_request(Station *station, packet_t data, std::function<
 	{
 		if (data.type == network::DISCOVERY_REQUEST)
 		{
-			std::cout << "New Host Found!" << std::endl;
+			station->GetStationTable()->insert(data.station.hostname, data.station);
 
 			auto response = network::create_packet(network::DISCOVERY_RESPONSE, station->serialize(), station->GetClock());
 			response.status = network::SUCCESS;
@@ -67,7 +66,7 @@ void *discovery::process_request(Station *station, packet_t data, std::function<
 
 	if (station->GetType() == HOST)
 	{
-		if (data.type == network::LEAVING)
+		if (data.type == network::LEAVING && data.station.macAddress == station->GetManager()->GetMacAddress())
 		{
 			station->SetManager(NULL);
 		}

@@ -5,6 +5,7 @@
 #include <sys/ioctl.h>
 #include <cstring>
 #include <iostream>
+#include "include/utils.h"
 
 void Station::init()
 {
@@ -147,4 +148,74 @@ void Station::SetManager(Station *manager) {
 
 void Station::SetStatus(StationStatus status) {
   atomic_set([&](Station *self) {self->status = status;});
+}
+
+void Station::SetStationTable(StationTable *station_table) {
+  atomic_set([&](Station *self) {self->station_table = station_table;});
+}
+
+
+std::list<std::pair<station_serial, station_item>> StationTable::getValues()
+{
+  std::list<std::pair<station_serial, station_item>> values;
+  this->lock.lock();
+  for (auto &item : this->table)
+    values.push_back(item.second);
+  this->lock.unlock();
+  return values;
+}
+
+bool StationTable::has(std::string key)
+{
+  return this->table.find(key) != this->table.end();
+}
+
+void StationTable::insert(std::string key, station_serial item)
+{
+  this->lock.lock();
+  station_item i;
+  i.last_update = now();
+  i.retry_counter = 0;
+  this->table.insert_or_assign(key, std::pair(item, i));
+  this->clock++;
+  this->has_update = true;
+  this->lock.unlock();
+}
+
+void StationTable::remove(std::string key)
+{
+  this->lock.lock();
+  this->table.erase(key);
+  this->clock++;
+  this->has_update = true;
+  this->lock.unlock();
+}
+
+void StationTable::update(std::string key, StationStatus new_status, StationType new_type)
+{
+  if (this->has(key))
+  {
+    this->lock.lock();
+    if (this->table[key].first.status != new_status || this->table[key].first.type != new_type) {
+      this->table[key].first.status = new_status;
+      this->table[key].first.type = new_type;
+      this->table[key].second.last_update = now();
+      this->table[key].second.retry_counter = 0;
+      this->clock++;
+      this->has_update = true;
+    }
+    this->lock.unlock();
+  }
+}
+
+void StationTable::update_retry(std::string key, u_int8_t retry_counter)
+{
+  if (this->has(key))
+  {
+    std::cout << "has key " << int(retry_counter) << std::endl;
+    this->lock.lock();
+    this->table[key].second.last_update = now();
+    this->table[key].second.retry_counter = retry_counter;
+    this->lock.unlock();
+  }
 }

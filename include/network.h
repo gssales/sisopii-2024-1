@@ -7,13 +7,16 @@
 
 namespace network
 {  
-  const int PORT = 50505;
+  const int UDP_PORT = 50505;
+  const int TCP_PORT = 50506;
 
 	enum MessageType: unsigned short
 	{
 		UNKNOWN,
 		DISCOVERY_REQUEST,
 		DISCOVERY_RESPONSE,
+		MONITORING_REQUEST,
+		MONITORING_RESPONSE,
 		LEAVING
 	};
 
@@ -36,9 +39,9 @@ namespace network
     station_serial station;
   } packet_t;
   
-  struct sockaddr_in socket_address(in_addr_t addr);
+  struct sockaddr_in socket_address(in_addr_t addr, const int port);
 
-  void *tcp_server();
+  void *tcp_server(Station *station);
   void tcp_call_resolve(int sockfd, sockaddr_in client_addr, Station *station, packet_t request_data, std::function<void(Station*, packet_t, std::function<void(packet_t)>)> callback);
 
   void *udp_server(Station *station);
