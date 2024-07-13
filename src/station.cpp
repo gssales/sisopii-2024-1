@@ -7,6 +7,25 @@
 #include <iostream>
 #include "include/utils.h"
 
+std::string StationStatus_to_string(StationStatus status)
+{
+  switch (status)
+  {
+  case AWAKEN:
+    return "AWAKEN";
+  case ELECTING:
+    return "ELECTING";
+  case WAITING_MANAGER:
+    return "WAITING_MANAGER";
+  case ASLEEP:
+    return "ASLEEP";
+  case EXITING:
+    return "EXITING";
+  default:
+    return "UNKNOWN";
+  }
+}
+
 void Station::init()
 {
   char hostname[HOST_NAME_MAX];

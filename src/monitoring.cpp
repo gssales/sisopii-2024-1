@@ -36,6 +36,8 @@ void monitoring::proc_manager(Station *station)
   {
     auto host = host_pair.first;
     auto host_info = host_pair.second;
+    if (host.macAddress == station->GetMacAddress())
+      continue;
     if ((host.status != ASLEEP && host_info.last_update < now() -10000) 
         || (host.status == ASLEEP && host_info.last_update < now() - 30000))
     {

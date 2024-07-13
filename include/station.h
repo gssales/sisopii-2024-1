@@ -27,6 +27,7 @@ enum StationStatus : uint8_t
   ASLEEP,
   EXITING
 };
+std::string StationStatus_to_string(StationStatus status);
 
 class StationTable;
 
@@ -79,7 +80,11 @@ public:
 
   in_addr_t GetInAddr() const { return this->s_addr; }
 
+  std::string GetHostname() const { return this->hostname; }
+
   std::string GetMacAddress() const { return this->macAddress; }
+
+  std::string GetIpAddress() const { return this->ipAddress; }
 
   unsigned int GetClock() const { return this->clock; }
 
