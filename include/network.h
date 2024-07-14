@@ -4,11 +4,13 @@
 #include <arpa/inet.h>
 
 #include "include/station.h"
+#include "include/options_parser.h"
+
+#define UDP_PORT 50505 // default, can be changed using -p-dgram <port> option
+#define TCP_PORT 50506 // default, can be changed using -p-stream <port> option
 
 namespace network
 {  
-  const int UDP_PORT = 50505;
-  const int TCP_PORT = 50506;
 
 	enum MessageType: unsigned short
 	{
@@ -41,15 +43,15 @@ namespace network
   
   struct sockaddr_in socket_address(in_addr_t addr, const int port);
 
-  void *tcp_server(Station *station);
+  void *tcp_server(option_t *options, Station *station);
   void tcp_call_resolve(int sockfd, sockaddr_in client_addr, Station *station, packet_t request_data, std::function<void(Station*, packet_t, std::function<void(packet_t)>)> callback);
 
-  void *udp_server(Station *station);
+  void *udp_server(option_t *options, Station *station);
   void udp_call_resolve(int sockfd, sockaddr_in client_addr, Station *station, packet_t request_data, std::function<void(Station*, packet_t, std::function<void(packet_t)>)> callback);
 
-  int open_socket(int sock_type);
-	packet_t datagram(in_addr_t address, packet_t data);
-	packet_t packet(in_addr_t address, packet_t data);
+  int open_socket(int sock_type, int timeout_sec);
+	packet_t datagram(in_addr_t address, packet_t data, int timeout_sec = 1, int port = UDP_PORT);
+	packet_t packet(in_addr_t address, packet_t data, int timeout_sec = 1, int port = TCP_PORT);
 
 	packet_t create_packet(MessageType type, station_serial station, short clock = 0, short seqn = 0, const std::string& payload = "");
 };

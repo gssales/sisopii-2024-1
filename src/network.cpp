@@ -26,11 +26,13 @@ packet_t create_error_packet(char* message)
 
 using namespace network;
 
-void *network::tcp_server(Station *station)
+void *network::tcp_server(option_t *options, Station *station)
 {
-  int sockfd = open_socket(SOCK_STREAM);
+  int port = get_option(options, OPT_PORT_STREAM, TCP_PORT);
+  int timeout = get_option(options, OPT_TIMEOUT, 1); // default 1 second
+  int sockfd = open_socket(SOCK_STREAM, timeout);
 
-  struct sockaddr_in bound_addr = socket_address(INADDR_ANY, TCP_PORT);
+  struct sockaddr_in bound_addr = socket_address(INADDR_ANY, port);
   if (bind(sockfd, (struct sockaddr *) &bound_addr, sizeof(struct sockaddr)) == -1) 
     std::cerr << "ERROR binding socket: " << strerror(errno) << std::endl;
     
@@ -83,11 +85,11 @@ void network::tcp_call_resolve(int client_sockfd, sockaddr_in client_addr, Stati
 	process_thread.detach();
 }
 
-packet_t network::packet(in_addr_t address, packet_t data)
+packet_t network::packet(in_addr_t address, packet_t data, int timeout /*= 1*/, int port /*= TCP_PORT*/)
 {
-  int sockfd = open_socket(SOCK_STREAM);
+  int sockfd = open_socket(SOCK_STREAM, timeout);
 
-  struct sockaddr_in sock_addr = socket_address(address, TCP_PORT);
+  struct sockaddr_in sock_addr = socket_address(address, port);
   if (connect(sockfd, (const struct sockaddr *) &sock_addr, sizeof(sock_addr)) != 0) 
   {
 		std::cerr << "ERROR on connect: " << strerror(errno) << std::endl;
@@ -116,11 +118,13 @@ packet_t network::packet(in_addr_t address, packet_t data)
 }
 
 
-void *network::udp_server(Station *station)
+void *network::udp_server(option_t *options, Station *station)
 {
-  int sockfd = open_socket(SOCK_DGRAM);
+  int port = get_option(options, OPT_PORT_DGRAM, UDP_PORT);
+  int timeout = get_option(options, OPT_TIMEOUT, 1); // default 1 second
+  int sockfd = open_socket(SOCK_DGRAM, timeout);
 
-  struct sockaddr_in bound_addr = socket_address(INADDR_ANY, UDP_PORT);
+  struct sockaddr_in bound_addr = socket_address(INADDR_ANY, port);
   if (bind(sockfd, (struct sockaddr *) &bound_addr, sizeof(struct sockaddr)) == -1) 
     std::cerr << "ERROR binding socket: " << strerror(errno) << std::endl;
 
@@ -164,11 +168,11 @@ void network::udp_call_resolve(int sockfd, sockaddr_in client_addr, Station *sta
 	process_thread.detach();
 }
 
-packet_t network::datagram(in_addr_t address, packet_t data)
+packet_t network::datagram(in_addr_t address, packet_t data, int timeout /*= 1*/, int port /*= UDP_PORT*/)
 {
-  int sockfd = open_socket(SOCK_DGRAM);
+  int sockfd = open_socket(SOCK_DGRAM, timeout);
 
-  struct sockaddr_in sock_addr = socket_address(address, UDP_PORT);
+  struct sockaddr_in sock_addr = socket_address(address, port);
   int n = sendto(sockfd, &data, sizeof(data), 0, (const struct sockaddr *) &sock_addr, sizeof(struct sockaddr_in));
 	if (n < 0)
   {
@@ -205,15 +209,15 @@ packet_t network::create_packet(MessageType type, station_serial station, short 
 	return p;
 };
 
-int network::open_socket(int sock_type)
+int network::open_socket(int sock_type, int timeout_sec)
 {
   int sockfd;
   if ((sockfd = socket(AF_INET, sock_type, 0)) == -1) 
     std::cerr << "ERROR opening socket: " << strerror(errno) << std::endl;
       
   struct timeval timeout; // Needs a timeout to finish the program
-  timeout.tv_sec = 10; // 10s timeout
-  timeout.tv_usec = 500000; // 500ms timeout
+  timeout.tv_sec = timeout_sec;
+  timeout.tv_usec = 1; // 1us timeout
   if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) == -1)
     std::cout << "ERROR option timeout: " << strerror(errno) << std::endl;
       

@@ -11,9 +11,9 @@ using namespace network;
 namespace monitoring
 {
 
-	void *service(Station *station);
+	void *service(option_t *options, Station *station);
 
-	void proc_manager(Station *station);
+	void proc_manager(option_t *options, Station *station);
 
 	void *process_request(Station *station, packet_t data, std::function<void(packet_t)> resolve);
 }

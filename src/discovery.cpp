@@ -6,7 +6,7 @@
 
 using namespace discovery;
 
-void *discovery::service(Station *station)
+void *discovery::service(option_t *options, Station *station)
 {
 	while (station->GetStatus() != EXITING)
 	{
@@ -22,7 +22,7 @@ void *discovery::service(Station *station)
 		 * Busca manager
 		 */
 		if (station->GetType() == HOST)
-			proc_host(station);
+			proc_host(options, station);
 	}
 	return 0;
 }
@@ -30,21 +30,23 @@ void *discovery::service(Station *station)
 /**
  * Client Logic
 */
-void discovery::proc_host(Station *station)
+void discovery::proc_host(option_t *options, Station *station)
 {
+	int timeout = get_option(options, OPT_TIMEOUT, 1);
+	int port = get_option(options, OPT_PORT_DGRAM, UDP_PORT);
 	if (station->GetManager() == NULL)
 	{
 		auto discovery_request = network::create_packet(network::DISCOVERY_REQUEST, station->serialize());
-		auto response = network::datagram(INADDR_BROADCAST, discovery_request);
+		auto response = network::datagram(INADDR_BROADCAST, discovery_request, timeout, port);
 		if (response.type == network::DISCOVERY_RESPONSE && response.status == network::SUCCESS)
 		{
 			Station manager;
 			Station::deserialize(&manager, response.station);
 			station->SetManager(&manager);
-			station->GetManager()->print();
 		}
 	}
-	std::this_thread::sleep_for(std::chrono::seconds(10));
+	int sleep = get_option(options, OPT_SLEEP, 5);
+	std::this_thread::sleep_for(std::chrono::seconds(sleep));
 }
 	
 /**

@@ -5,15 +5,16 @@
 #include <functional>
 
 #include "include/network.h"
+#include "include/options_parser.h"
 
 using namespace network;
 
 namespace discovery
 {
 
-	void *service(Station *station);
+	void *service(option_t *options, Station *station);
 
-	void proc_host(Station *station);
+	void proc_host(option_t *options, Station *station);
 
 	void *process_request(Station *station, packet_t data, std::function<void(packet_t)> resolve);
 }

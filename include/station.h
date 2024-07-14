@@ -57,8 +57,12 @@ private:
   void findMacAddress();
 
 public:
+  bool has_update;
+  std::mutex ui_mutex;
   
-  Station() {}
+  Station() {
+    this->has_update = false;
+  }
 
   void init();
   void print();
@@ -122,7 +126,8 @@ class StationTable
 {
   public:
     unsigned long clock;
-    std::mutex lock;
+    std::mutex mutex;
+    std::mutex ui_mutex;
     bool has_update;
     std::map<std::string, std::pair<station_serial, station_item>> table;
 
@@ -132,13 +137,16 @@ class StationTable
       this->has_update = false;
     }
 
-    std::list<std::pair<station_serial, station_item>> getValues();
+    std::map<std::string, std::pair<station_serial, station_item>> clone();
     bool has(std::string key);
     
     void insert(std::string key, station_serial item);
     void remove(std::string key);
     void update(std::string key, StationStatus new_status, StationType new_type);
     void update_retry(std::string key, u_int8_t retry_counter);
+
+    void lock_table();
+    void unlock_table();
 };
 
 #endif

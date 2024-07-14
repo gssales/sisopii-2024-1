@@ -37,6 +37,8 @@ void Station::init()
   this->findIPAddress();
   this->findInterfaceName();
   this->findMacAddress();
+
+  this->ui_mutex.unlock();
 }
 
 void Station::findIPAddress()
@@ -155,6 +157,7 @@ void Station::atomic_set(std::function<void(Station *)> callback)
   mutex_station.lock();
   callback(this);
   mutex_station.unlock();
+  ui_mutex.unlock();
 }
 
 void Station::SetType(StationType type) {
@@ -174,14 +177,13 @@ void Station::SetStationTable(StationTable *station_table) {
 }
 
 
-std::list<std::pair<station_serial, station_item>> StationTable::getValues()
+std::map<std::string, std::pair<station_serial, station_item>> StationTable::clone()
 {
-  std::list<std::pair<station_serial, station_item>> values;
-  this->lock.lock();
-  for (auto &item : this->table)
-    values.push_back(item.second);
-  this->lock.unlock();
-  return values;
+  std::map<std::string, std::pair<station_serial, station_item>> clone;
+  this->mutex.lock();
+  clone = this->table;
+  this->mutex.unlock();
+  return clone;
 }
 
 bool StationTable::has(std::string key)
@@ -191,30 +193,32 @@ bool StationTable::has(std::string key)
 
 void StationTable::insert(std::string key, station_serial item)
 {
-  this->lock.lock();
+  this->mutex.lock();
   station_item i;
   i.last_update = now();
   i.retry_counter = 0;
   this->table.insert_or_assign(key, std::pair(item, i));
   this->clock++;
   this->has_update = true;
-  this->lock.unlock();
+  this->mutex.unlock();
+  this->ui_mutex.unlock();
 }
 
 void StationTable::remove(std::string key)
 {
-  this->lock.lock();
+  this->mutex.lock();
   this->table.erase(key);
   this->clock++;
   this->has_update = true;
-  this->lock.unlock();
+  this->mutex.unlock();
+  this->ui_mutex.unlock();
 }
 
 void StationTable::update(std::string key, StationStatus new_status, StationType new_type)
 {
   if (this->has(key))
   {
-    this->lock.lock();
+    this->mutex.lock();
     if (this->table[key].first.status != new_status || this->table[key].first.type != new_type) {
       this->table[key].first.status = new_status;
       this->table[key].first.type = new_type;
@@ -223,7 +227,8 @@ void StationTable::update(std::string key, StationStatus new_status, StationType
       this->clock++;
       this->has_update = true;
     }
-    this->lock.unlock();
+    this->mutex.unlock();
+    this->ui_mutex.unlock();
   }
 }
 
@@ -231,10 +236,10 @@ void StationTable::update_retry(std::string key, u_int8_t retry_counter)
 {
   if (this->has(key))
   {
-    std::cout << "has key " << int(retry_counter) << std::endl;
-    this->lock.lock();
+    this->mutex.lock();
     this->table[key].second.last_update = now();
     this->table[key].second.retry_counter = retry_counter;
-    this->lock.unlock();
+    this->mutex.unlock();
+    this->ui_mutex.unlock();
   }
 }

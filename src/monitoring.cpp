@@ -6,7 +6,7 @@
 
 using namespace monitoring;
 
-void *monitoring::service(Station *station)
+void *monitoring::service(option_t *options, Station *station)
 {
   while (station->GetStatus() != EXITING)
   {
@@ -15,7 +15,7 @@ void *monitoring::service(Station *station)
      * itera sobre os hosts, atualizando sleep status
      */
     if (station->GetType() == MANAGER)
-      proc_manager(station);
+      proc_manager(options, station);
       
     /**
      * Na estação participante, o serviço de monitoramento é passivo
@@ -30,33 +30,40 @@ void *monitoring::service(Station *station)
 /**
  * Manager Logic
 */
-void monitoring::proc_manager(Station *station)
+void monitoring::proc_manager(option_t *options, Station *station)
 {
-  for (auto &host_pair : station->GetStationTable()->getValues())
+  uint64_t refresh = get_option(options, OPT_REFRESH, 10) * 1000; // default 10 seconds
+  int timeout = get_option(options, OPT_TIMEOUT, 1); // default 1 second
+  int max_retry = get_option(options, OPT_RETRY, 2); // default 2 retries
+  int port = get_option(options, OPT_PORT_STREAM, TCP_PORT);
+  for (auto &host_pair : station->GetStationTable()->clone())
   {
-    auto host = host_pair.first;
-    auto host_info = host_pair.second;
+    auto hostname = host_pair.first;
+    auto host = host_pair.second.first;
+    auto host_info = host_pair.second.second;
+
     if (host.macAddress == station->GetMacAddress())
       continue;
-    if ((host.status != ASLEEP && host_info.last_update < now() -10000) 
-        || (host.status == ASLEEP && host_info.last_update < now() - 30000))
+
+    if (now() - host_info.last_update < refresh)
     {
       auto monitoring_request =  network::create_packet(network::MONITORING_REQUEST, station->serialize());
-      auto response = network::packet(inet_addr(host.ipAddress), monitoring_request);
+      auto response = network::packet(inet_addr(host.ipAddress), monitoring_request, timeout, port);
       if (response.status == network::SUCCESS)
       {
-        station->GetStationTable()->update_retry(host.hostname, 0);
-        station->GetStationTable()->update(host.hostname, AWAKEN, host.type);
+        station->GetStationTable()->update_retry(hostname, 0);
+        station->GetStationTable()->update(hostname, AWAKEN, host.type);
       } 
       else if (host.status != ASLEEP) 
       {
-        station->GetStationTable()->update_retry(host.hostname, host_info.retry_counter + 1);
-        if (host_info.retry_counter > 3)
-          station->GetStationTable()->update(host.hostname, ASLEEP, host.type);
+        station->GetStationTable()->update_retry(hostname, host_info.retry_counter + 1);
+        if (host_info.retry_counter + 1 >= max_retry)
+          station->GetStationTable()->update(hostname, ASLEEP, host.type);
       }
     }
   }
-	std::this_thread::sleep_for(std::chrono::seconds(5));
+  int sleep = get_option(options, OPT_SLEEP, 5);
+	std::this_thread::sleep_for(std::chrono::seconds(sleep));
 }
 
 void *monitoring::process_request(Station *station, packet_t data, std::function<void(packet_t)> resolve) 
