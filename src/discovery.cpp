@@ -6,8 +6,9 @@
 
 using namespace discovery;
 
-void *discovery::service(option_t *options, Station *station)
+void *discovery::service(service_params_t *params)
 {
+	auto station = params->station;
 	while (station->GetStatus() != EXITING)
 	{
 		/*
@@ -22,7 +23,7 @@ void *discovery::service(option_t *options, Station *station)
 		 * Busca manager
 		 */
 		if (station->GetType() == HOST)
-			proc_host(options, station);
+			proc_host(params);
 	}
 	return 0;
 }
@@ -30,19 +31,22 @@ void *discovery::service(option_t *options, Station *station)
 /**
  * Client Logic
 */
-void discovery::proc_host(option_t *options, Station *station)
+void discovery::proc_host(service_params_t *params)
 {
-	int timeout = get_option(options, OPT_TIMEOUT, 1);
-	int port = get_option(options, OPT_PORT_DGRAM, UDP_PORT);
+	auto options = params->options;
+	auto station = params->station;
+	auto logger = params->logger;
+
 	if (station->GetManager() == NULL)
 	{
 		auto discovery_request = network::create_packet(network::DISCOVERY_REQUEST, station->serialize());
-		auto response = network::datagram(INADDR_BROADCAST, discovery_request, timeout, port);
+		auto response = network::datagram(INADDR_BROADCAST, discovery_request, logger, options);
 		if (response.type == network::DISCOVERY_RESPONSE && response.status == network::SUCCESS)
 		{
 			Station manager;
 			Station::deserialize(&manager, response.station);
 			station->SetManager(&manager);
+			params->ui_lock.unlock();
 		}
 	}
 	int sleep = get_option(options, OPT_SLEEP, 5);
@@ -52,13 +56,17 @@ void discovery::proc_host(option_t *options, Station *station)
 /**
  * Server Logic
 */
-void *discovery::process_request(Station *station, packet_t data, std::function<void(packet_t)> resolve)
+void *discovery::process_request(service_params_t *params, packet_t data, std::function<void(packet_t)> resolve)
 {
+	auto station = params->station;
+	auto station_table = params->station_table;
+
 	if (station->GetType() == MANAGER)
 	{
 		if (data.type == network::DISCOVERY_REQUEST)
 		{
-			station->GetStationTable()->insert(data.station.hostname, data.station);
+			station_table->insert(data.station.hostname, data.station);
+			params->ui_lock.unlock();
 
 			auto response = network::create_packet(network::DISCOVERY_RESPONSE, station->serialize(), station->GetClock());
 			response.status = network::SUCCESS;
@@ -71,6 +79,7 @@ void *discovery::process_request(Station *station, packet_t data, std::function<
 		if (data.type == network::LEAVING && data.station.macAddress == station->GetManager()->GetMacAddress())
 		{
 			station->SetManager(NULL);
+			params->ui_lock.unlock();
 		}
 	}
 	

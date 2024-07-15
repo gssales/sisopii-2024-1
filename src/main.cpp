@@ -11,11 +11,13 @@
 #include "include/interface.h"
 #include "include/utils.h"
 #include "include/options_parser.h"
+#include "include/logger.h"
+#include "include/service.h"
 
 int main(int argc, const char *argv[]) {
-	auto options = option_t();
-	options[OPT_PORT_DGRAM] = 50505;
-	options[OPT_PORT_STREAM] = 50506;
+	auto options = options_t();
+	options[OPT_PORT_DGRAM] = UDP_PORT;
+	options[OPT_PORT_STREAM] = TCP_PORT;
 	options[OPT_TIMEOUT] = 1;
 	options[OPT_SLEEP] = 5;
 	options[OPT_REFRESH] = 10;
@@ -23,29 +25,38 @@ int main(int argc, const char *argv[]) {
 	options[OPT_DEBUG] = 0;
 	parseOptions(argc, argv, &options);
 
+	service_params_t params;
+	params.options = &options;
+
 	auto station = new Station();
 	station->init();
 	if (get_option(&options, OPT_MANAGER, 0) == 1)
 		station->SetType(MANAGER);
-	// station->print();
+	params.station = station;
 
-	station->SetStationTable(new StationTable());
+	auto station_table = new StationTable();
 	if (station->GetType() == MANAGER)
-	{
-		station->GetStationTable()->insert(station->GetHostname(), station->serialize());
-	}
+		station_table->insert(station->GetHostname(), station->serialize());
+	params.station_table = station_table;
 
-	auto udp_thread = std::thread(&network::udp_server, &options, station);
-	auto tcp_thread = std::thread(&network::tcp_server, &options, station);
-	auto discovery_thread = std::thread(&discovery::service, &options, station);
-	auto monitoring_thread = std::thread(&monitoring::service, &options, station);
-	auto interface_thread = std::thread(&interface::interface, &options, station);
+	auto logger = new Logger(&params.ui_lock);
+	logger->debug = get_option(&options, OPT_DEBUG, 0) == 1;
+	logger->info("Starting station " + station->GetHostname());
+	params.logger = logger;
+
+	auto udp_thread = std::thread(&network::udp_server, &params);
+	auto tcp_thread = std::thread(&network::tcp_server, &params);
+	auto discovery_thread = std::thread(&discovery::service,&params);
+	auto monitoring_thread = std::thread(&monitoring::service,&params);
+	auto interface_thread = std::thread(&interface::interface,&params);
+	auto command_thread = std::thread(&interface::command,&params);
 
 	udp_thread.join();
 	tcp_thread.join();
 	discovery_thread.join();
 	monitoring_thread.join();
 	interface_thread.join();
+	command_thread.join();
 
 	return 0;
 }

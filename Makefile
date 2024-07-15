@@ -3,6 +3,7 @@ CXXFLAGS=-std=c++23 -Wall -Wextra -I. -g
 BIN=sleep_server
 CNT=docker
 IMG=sleep-server
+NAME=host1
 
 SRC=$(wildcard src/*.cpp)
 OBJ=$(SRC:%.cpp=%.o)
@@ -17,4 +18,4 @@ image:
 	$(CNT) build -t $(IMG) .
 
 run: image
-	$(CNT) run -it --rm $(IMG) ./$(BIN) $(_)
+	$(CNT) run -it --rm --name $(NAME) -h $(NAME) $(IMG) ./$(BIN) $(_)

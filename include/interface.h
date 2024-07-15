@@ -2,11 +2,13 @@
 #define _INTERFACE_H
 
 #include "include/station.h"
-#include "include/options_parser.h"
+#include "include/service.h"
 
 namespace interface
 {
-	void *interface(option_t *options, Station *station);
+	void *interface(service_params_t *params);
+
+	void *command(service_params_t *params);
 }
 
 #endif

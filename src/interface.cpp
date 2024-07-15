@@ -4,6 +4,7 @@
 #include <chrono>
 #include <thread>
 #include <iomanip>
+#include "include/utils.h"
 
 using namespace std;
 
@@ -56,7 +57,7 @@ void print_row(Station *station)
   cout << endl;
 }
 
-void print_row(std::pair<station_serial, station_item> station, option_t *options)
+void print_row(std::pair<station_serial, station_item> station, options_t *options)
 {
   std::string type = "  ";
   if (station.first.type == MANAGER)
@@ -83,8 +84,19 @@ void print_row(std::pair<station_serial, station_item> station, option_t *option
   cout << endl;
 }
 
-void *interface::interface(option_t *options, Station *station)
+void goto_input()
 {
+  gotoxy(1, 15);
+  cout << "> ";
+}
+
+void *interface::interface(service_params_t *params)
+{
+  auto station = params->station;
+  auto station_table = params->station_table;
+  auto options = params->options;
+  auto logger = params->logger;
+
   clear_screen();
   gotoxy(1, 1);
   header();
@@ -93,30 +105,59 @@ void *interface::interface(option_t *options, Station *station)
 
   while (station->GetStatus() != EXITING) 
   {
+    params->ui_lock.lock();
     if (station->GetType() == MANAGER)
     {
-      station->GetStationTable()->ui_mutex.lock();
-    
-      gotoxy(1, 3);
-      for (auto &host_pair : station->GetStationTable()->table)
-        print_row(host_pair.second, options);
-      gotoxy(1, 15);
+      if (station_table->has_update)
+      {
+        for (int i = 0; i < 10; i++)
+          cout << "\033[" << (3+i) << ";1H \033[K" << endl;
+        
+        gotoxy(1, 3);
+        for (auto &host_pair : station_table->clone())
+          print_row(host_pair.second, options);
 
-      station->GetStationTable()->ui_mutex.unlock();
-      station->GetStationTable()->ui_mutex.lock();
+        station_table->has_update = false;
+      }
     }
-    else
+    else if (station->has_update)
     {
-      station->ui_mutex.lock();
+      for (int i = 0; i < 10; i++)
+        cout << "\033[" << (3+i) << ";1H \033[K" << endl;
+
       gotoxy(1, 3);
       if (station->GetManager() != NULL)
         print_row(station->GetManager());
       print_row(station);
-      gotoxy(1, 15);
-      station->ui_mutex.unlock();
-      station->ui_mutex.lock();
+      
+      station->has_update = false;
     }
+
+    if (logger->has_changes)
+    {
+      gotoxy(1, 17);
+      cout << "\033[J";
+      cout << logger->get_lines(10) << endl;
+    }
+
+    goto_input();
+    cout << flush;
+
+    params->ui_lock.unlock();
+    params->ui_lock.lock();
   }
+
   return 0;
 }
 
+void *interface::command(service_params_t *params)
+{
+  auto station = params->station;
+
+  while (station->GetStatus() != EXITING)
+  {
+
+  }
+
+  return 0;
+}

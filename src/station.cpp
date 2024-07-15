@@ -18,7 +18,7 @@ std::string StationStatus_to_string(StationStatus status)
   case WAITING_MANAGER:
     return "WAITING_MANAGER";
   case ASLEEP:
-    return "ASLEEP";
+    return "SLEEPING";
   case EXITING:
     return "EXITING";
   default:
@@ -37,8 +37,6 @@ void Station::init()
   this->findIPAddress();
   this->findInterfaceName();
   this->findMacAddress();
-
-  this->ui_mutex.unlock();
 }
 
 void Station::findIPAddress()
@@ -156,8 +154,8 @@ void Station::atomic_set(std::function<void(Station *)> callback)
 {
   mutex_station.lock();
   callback(this);
+  this->has_update = true;
   mutex_station.unlock();
-  ui_mutex.unlock();
 }
 
 void Station::SetType(StationType type) {
@@ -170,10 +168,6 @@ void Station::SetManager(Station *manager) {
 
 void Station::SetStatus(StationStatus status) {
   atomic_set([&](Station *self) {self->status = status;});
-}
-
-void Station::SetStationTable(StationTable *station_table) {
-  atomic_set([&](Station *self) {self->station_table = station_table;});
 }
 
 
@@ -201,7 +195,6 @@ void StationTable::insert(std::string key, station_serial item)
   this->clock++;
   this->has_update = true;
   this->mutex.unlock();
-  this->ui_mutex.unlock();
 }
 
 void StationTable::remove(std::string key)
@@ -211,7 +204,6 @@ void StationTable::remove(std::string key)
   this->clock++;
   this->has_update = true;
   this->mutex.unlock();
-  this->ui_mutex.unlock();
 }
 
 void StationTable::update(std::string key, StationStatus new_status, StationType new_type)
@@ -228,7 +220,6 @@ void StationTable::update(std::string key, StationStatus new_status, StationType
       this->has_update = true;
     }
     this->mutex.unlock();
-    this->ui_mutex.unlock();
   }
 }
 
@@ -237,9 +228,10 @@ void StationTable::update_retry(std::string key, u_int8_t retry_counter)
   if (this->has(key))
   {
     this->mutex.lock();
+    if (this->table[key].second.retry_counter != retry_counter)
+      this->has_update = true;
     this->table[key].second.last_update = now();
     this->table[key].second.retry_counter = retry_counter;
     this->mutex.unlock();
-    this->ui_mutex.unlock();
   }
 }

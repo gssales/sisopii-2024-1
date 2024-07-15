@@ -3,7 +3,7 @@
 #include <iostream>
 #include <cstring>
 
-void parseOptions(int argc, const char* argv[], option_t *options) {
+void parseOptions(int argc, const char* argv[], options_t *options) {
 	for (int i = 1; i < argc; i++) {
     if (strcmp(argv[i], OPT_MANAGER) == 0)
       (*options)[OPT_MANAGER] = 1;
@@ -22,7 +22,7 @@ void parseOptions(int argc, const char* argv[], option_t *options) {
 	}
 }
 
-int get_option(option_t *options, std::string key, int default_value) {
+int get_option(options_t *options, std::string key, int default_value) {
   if (options->find(key) != options->end()) {
     return options->at(key);
   }

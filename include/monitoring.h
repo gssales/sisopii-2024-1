@@ -11,11 +11,11 @@ using namespace network;
 namespace monitoring
 {
 
-	void *service(option_t *options, Station *station);
+	void *service(service_params_t *params);
 
-	void proc_manager(option_t *options, Station *station);
+	void proc_manager(service_params_t *params);
 
-	void *process_request(Station *station, packet_t data, std::function<void(packet_t)> resolve);
+	void *process_request(service_params_t *params, packet_t data, std::function<void(packet_t)> resolve);
 }
 
 #endif

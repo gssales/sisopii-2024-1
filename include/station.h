@@ -41,7 +41,6 @@ private:
   StationType type = HOST;
   StationStatus status = AWAKEN;
 
-  StationTable *station_table;
   Station *manager;
   std::string interface;
 
@@ -58,7 +57,6 @@ private:
 
 public:
   bool has_update;
-  std::mutex ui_mutex;
   
   Station() {
     this->has_update = false;
@@ -94,9 +92,6 @@ public:
 
   StationStatus GetStatus() const { return this->status; }
   void SetStatus(StationStatus status);
-
-  StationTable* GetStationTable() const { return this->station_table; }
-  void SetStationTable(StationTable *station_table);
 };
 
 /**
@@ -127,7 +122,6 @@ class StationTable
   public:
     unsigned long clock;
     std::mutex mutex;
-    std::mutex ui_mutex;
     bool has_update;
     std::map<std::string, std::pair<station_serial, station_item>> table;
 
@@ -144,9 +138,6 @@ class StationTable
     void remove(std::string key);
     void update(std::string key, StationStatus new_status, StationType new_type);
     void update_retry(std::string key, u_int8_t retry_counter);
-
-    void lock_table();
-    void unlock_table();
 };
 
 #endif

@@ -4,19 +4,19 @@
 #include "include/station.h"
 #include <functional>
 
+#include "include/service.h"
 #include "include/network.h"
-#include "include/options_parser.h"
 
 using namespace network;
 
 namespace discovery
 {
 
-	void *service(option_t *options, Station *station);
+	void *service(service_params_t *params);
 
-	void proc_host(option_t *options, Station *station);
+	void proc_host(service_params_t *params);
 
-	void *process_request(Station *station, packet_t data, std::function<void(packet_t)> resolve);
+	void *process_request(service_params_t *params, packet_t data, std::function<void(packet_t)> resolve);
 }
 
 #endif

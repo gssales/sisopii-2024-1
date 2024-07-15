@@ -13,9 +13,9 @@
 #define OPT_REFRESH "-refresh"
 #define OPT_RETRY "-retry"
 
-typedef std::map<std::string, int> option_t;
+typedef std::map<std::string, int> options_t;
 
-void parseOptions(int argc, const char* argv[], option_t *options);
-int get_option(option_t *options, std::string key, int default_value);
+void parseOptions(int argc, const char* argv[], options_t *options);
+int get_option(options_t *options, std::string key, int default_value);
 
 #endif
