@@ -13,6 +13,40 @@
 #include "include/monitoring.h"
 #include "include/utils.h"
 
+std::string MessageType_to_string(MessageType type)
+{
+  switch (type)
+  {
+  case DISCOVERY_REQUEST:
+    return "DISCOVERY_REQUEST";
+  case DISCOVERY_RESPONSE:
+    return "DISCOVERY_RESPONSE";
+  case MONITORING_REQUEST:
+    return "MONITORING_REQUEST";
+  case MONITORING_RESPONSE:
+    return "MONITORING_RESPONSE";
+  case LEAVING:
+    return "LEAVING";
+  default:
+    return "UNKNOWN";
+  }
+}
+
+std::string RequestStatus_to_string(RequestStatus status)
+{
+  switch (status)
+  {
+  case PENDING:
+    return "PENDING";
+  case SUCCESS:
+    return "SUCCESS";
+  case FAIL:
+    return "FAIL";
+  default:
+    return "UNKNOWN";
+  }
+}
+
 packet_t create_error_packet(char* message)
 {
   packet_t p;
@@ -156,6 +190,7 @@ void *network::udp_server(service_params_t *params)
 			{
 			case DISCOVERY_REQUEST:
 			case DISCOVERY_RESPONSE:
+			case LEAVING:
 				udp_call_resolve(sockfd, client_addr, params, client_data, discovery::process_request);
 				break;
 			
@@ -185,7 +220,7 @@ packet_t network::datagram(in_addr_t address, packet_t data, Logger *logger, opt
 {
 	int timeout = get_option(options, OPT_TIMEOUT, 1);
 	int port = get_option(options, OPT_PORT_DGRAM, UDP_PORT);
-  
+
   int sockfd = open_socket(SOCK_DGRAM, timeout, logger);
 
   struct sockaddr_in sock_addr = socket_address(address, port);

@@ -52,19 +52,16 @@ void monitoring::proc_manager(service_params_t *params)
 
     if (now() - host_info.last_update < refresh)
     {
-      logger->info("Monitoring " + hostname);
       auto monitoring_request =  network::create_packet(network::MONITORING_REQUEST, station->serialize());
       auto response = network::packet(inet_addr(host.ipAddress), monitoring_request, logger, options);
       if (response.status == network::SUCCESS)
       {
-        logger->info("Awaken");
         station_table->update_retry(hostname, 0);
         station_table->update(hostname, AWAKEN, host.type);
         params->ui_lock.unlock();
       } 
       else if (host.status != ASLEEP) 
       {
-        logger->info("Failed to request " + hostname + " retrying " + std::to_string(host_info.retry_counter + 1) + "/" + std::to_string(max_retry));
         station_table->update_retry(hostname, host_info.retry_counter + 1);
         if (host_info.retry_counter + 1 >= max_retry)
           station_table->update(hostname, ASLEEP, host.type);

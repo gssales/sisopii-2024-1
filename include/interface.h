@@ -4,6 +4,9 @@
 #include "include/station.h"
 #include "include/service.h"
 
+#define CMD_EXIT "exit"
+#define CMD_REFRESH "refresh"
+
 namespace interface
 {
 	void *interface(service_params_t *params);

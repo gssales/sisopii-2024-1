@@ -72,11 +72,16 @@ void *discovery::process_request(service_params_t *params, packet_t data, std::f
 			response.status = network::SUCCESS;
 			resolve(response);
 		}
+		else if (data.type == network::LEAVING)
+		{	
+			station_table->remove(data.station.hostname);
+			params->ui_lock.unlock();
+		}
 	}
 
 	if (station->GetType() == HOST)
 	{
-		if (data.type == network::LEAVING && data.station.macAddress == station->GetManager()->GetMacAddress())
+		if (data.type == network::LEAVING && station->GetManager()->GetMacAddress().compare(data.station.macAddress) == 0)
 		{
 			station->SetManager(NULL);
 			params->ui_lock.unlock();

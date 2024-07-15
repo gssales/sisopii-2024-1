@@ -4,6 +4,7 @@
 #include <chrono>
 #include <thread>
 #include <iomanip>
+#include "include/network.h"
 #include "include/utils.h"
 
 using namespace std;
@@ -87,6 +88,7 @@ void print_row(std::pair<station_serial, station_item> station, options_t *optio
 void goto_input()
 {
   gotoxy(1, 15);
+  cout << "\033[K";
   cout << "> ";
 }
 
@@ -146,6 +148,8 @@ void *interface::interface(service_params_t *params)
     params->ui_lock.unlock();
     params->ui_lock.lock();
   }
+  gotoxy(1, 27);
+  cout << flush;
 
   return 0;
 }
@@ -154,9 +158,58 @@ void *interface::command(service_params_t *params)
 {
   auto station = params->station;
 
+	std::string command_values[5];
   while (station->GetStatus() != EXITING)
   {
+		std::string command;
+		getline(cin, command);
+		
+		std::stringstream ss(command);
+		std::string word;
+		
+		int pointer = 0;
+		while (ss >> word) {
+			command_values[pointer] = word;
+			pointer++;
+		}
+		
+		if (station->GetType() == MANAGER) 
+		{
+			// if (command_values[0].compare("wakeup") == 0) 
+			// {
+			// 	string macAddress = "";
+			// 	table->mutex_write.lock();
+			// 	for (auto &tupla : table->table)
+			// 	{
+			// 		if (tupla.second.GetHostname().compare(command_values[1]))
+			// 		{
+			// 			macAddress = tupla.second.GetMacAddress();
+			// 			break;
+			// 		}
+			// 	}
+			// 	table->mutex_write.unlock();
 
+			// 	if (macAddress.size() > 0)
+			// 	{
+			// 		stringstream cmd;
+			// 		cmd << "wakeonlan " << macAddress;
+			// 		system(cmd.str().c_str());
+			// 	}
+			// }
+		}
+		
+		if (command_values[0].compare(CMD_EXIT) == 0)
+		{
+			station->SetStatus(EXITING);
+      auto leaving_message = network::create_packet(network::LEAVING, station->serialize());
+      network::datagram(INADDR_BROADCAST, leaving_message, params->logger, params->options);
+      params->ui_lock.unlock();
+		}
+    
+		if (command_values[0].compare(CMD_REFRESH) == 0)
+      params->ui_lock.unlock();
+
+    goto_input();
   }
 
   return 0;
