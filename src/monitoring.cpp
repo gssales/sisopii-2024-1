@@ -50,7 +50,7 @@ void monitoring::proc_manager(service_params_t *params)
     if (host.macAddress == station->GetMacAddress())
       continue;
 
-    if (now() - host_info.last_update < refresh)
+    if (now() - host_info.last_update >= refresh)
     {
       auto monitoring_request =  network::create_packet(network::MONITORING_REQUEST, station->serialize());
       auto response = network::packet(inet_addr(host.ipAddress), monitoring_request, logger, options);
