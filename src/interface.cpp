@@ -169,50 +169,49 @@ void *interface::command(service_params_t *params)
 
   while (station->GetStatus() != EXITING)
   {
-	  std::vector<std::string> command_values;
-		std::string command;
-    cout << "getline" << endl;
-		getline(cin, command);
+    std::vector<std::string> command_values;
+    std::string command;
+    getline(cin, command);
     goto_input();
     if (std::cin.fail() || std::cin.eof()) {
       std::cin.clear();
       discovery::leave(params);
       continue;
     }
-		
-		std::stringstream ss(command);
-		std::string word;
-		
-		while (ss >> word)
-			command_values.push_back(word);
+    
+    std::stringstream ss(command);
+    std::string word;
+    
+    while (ss >> word)
+      command_values.push_back(word);
 
     if (command_values.size() == 0)
       continue;
-		
-		if (station->GetType() == MANAGER && command_values.size() > 0) 
-		{
+    
+    if (station->GetType() == MANAGER && command_values.size() > 0) 
+    {
       if (command_values.front().compare(CMD_WAKEUP) == 0) 
       {
-      	std::string macAddress = "";
+        std::string macAddress = "";
         
         station_table->mutex.lock();
         if (station_table->has(command_values[1]))
           macAddress = station_table->table[command_values[1]].first.macAddress;
         station_table->mutex.unlock();
 
-      	if (macAddress.size() > 0)
-      	{
-      		std::stringstream cmd;
-      		cmd << "wakeonlan " << macAddress;
-      		system(cmd.str().c_str());
-      	}
+        if (macAddress.size() > 0)
+        {
+          std::stringstream cmd;
+          cmd << "wakeonlan " << macAddress;
+          system(cmd.str().c_str());
+        }
       }
-		}
-		
-		if (command_values.front().compare(CMD_EXIT) == 0)
+    }
+    
+    if (command_values.front().compare(CMD_EXIT) == 0)
       discovery::leave(params);
     
-		if (command_values.front().compare(CMD_REFRESH) == 0)
+    if (command_values.front().compare(CMD_REFRESH) == 0)
       params->ui_lock.unlock();
 
     goto_input();
