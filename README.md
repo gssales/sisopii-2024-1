@@ -2,6 +2,13 @@
 
 Pode ser feito build com o comando `make`, ou executado com containers.
 
+### Make
+
+```
+$ make
+$ ./sleep_server
+```
+
 ### Containers
 
 Por padrão os comandos make usam o nerdCTL e Containerd para executar os containers. Isso pode ser configurado no arquivo Makefile

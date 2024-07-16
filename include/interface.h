@@ -4,8 +4,9 @@
 #include "include/station.h"
 #include "include/service.h"
 
-#define CMD_EXIT "exit"
+#define CMD_EXIT "EXIT"
 #define CMD_REFRESH "refresh"
+#define CMD_WAKEUP "WAKEUP"
 
 namespace interface
 {

@@ -13,6 +13,16 @@
 #include "include/options_parser.h"
 #include "include/logger.h"
 #include "include/service.h"
+#include <signal.h>
+
+service_params_t params;
+
+void handle_interrupt(int signal)
+{
+	if (signal == 2) {
+		discovery::leave(&params);
+	}
+}
 
 int main(int argc, const char *argv[]) {
 	auto options = options_t();
@@ -25,7 +35,6 @@ int main(int argc, const char *argv[]) {
 	options[OPT_DEBUG] = 0;
 	parseOptions(argc, argv, &options);
 
-	service_params_t params;
 	params.options = &options;
 
 	auto station = new Station();
@@ -50,6 +59,8 @@ int main(int argc, const char *argv[]) {
 	auto monitoring_thread = std::thread(&monitoring::service,&params);
 	auto interface_thread = std::thread(&interface::interface,&params);
 	auto command_thread = std::thread(&interface::command,&params);
+
+	signal(SIGINT, handle_interrupt);
 
 	udp_thread.join();
 	tcp_thread.join();

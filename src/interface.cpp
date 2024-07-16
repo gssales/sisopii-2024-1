@@ -4,8 +4,12 @@
 #include <chrono>
 #include <thread>
 #include <iomanip>
+#include <vector>
+#include <signal.h>
 #include "include/network.h"
+#include "include/discovery.h"
 #include "include/utils.h"
+
 
 using namespace std;
 
@@ -116,8 +120,11 @@ void *interface::interface(service_params_t *params)
           cout << "\033[" << (3+i) << ";1H \033[K" << endl;
         
         gotoxy(1, 3);
-        for (auto &host_pair : station_table->clone())
+        station_table->mutex.lock();
+        for (auto &host_pair : station_table->table)
           print_row(host_pair.second, options);
+        station_table->mutex.unlock();
+        goto_input();
 
         station_table->has_update = false;
       }
@@ -131,6 +138,7 @@ void *interface::interface(service_params_t *params)
       if (station->GetManager() != NULL)
         print_row(station->GetManager());
       print_row(station);
+      goto_input();
       
       station->has_update = false;
     }
@@ -140,9 +148,9 @@ void *interface::interface(service_params_t *params)
       gotoxy(1, 17);
       cout << "\033[J";
       cout << logger->get_lines(10) << endl;
+      goto_input();
+      logger->has_changes = false;
     }
-
-    goto_input();
     cout << flush;
 
     params->ui_lock.unlock();
@@ -157,59 +165,58 @@ void *interface::interface(service_params_t *params)
 void *interface::command(service_params_t *params)
 {
   auto station = params->station;
+  auto station_table = params->station_table;
 
-	std::string command_values[5];
   while (station->GetStatus() != EXITING)
   {
+	  std::vector<std::string> command_values;
 		std::string command;
+    cout << "getline" << endl;
 		getline(cin, command);
+    goto_input();
+    if (std::cin.fail() || std::cin.eof()) {
+      std::cin.clear();
+      discovery::leave(params);
+      continue;
+    }
 		
 		std::stringstream ss(command);
 		std::string word;
 		
-		int pointer = 0;
-		while (ss >> word) {
-			command_values[pointer] = word;
-			pointer++;
-		}
-		
-		if (station->GetType() == MANAGER) 
-		{
-			// if (command_values[0].compare("wakeup") == 0) 
-			// {
-			// 	string macAddress = "";
-			// 	table->mutex_write.lock();
-			// 	for (auto &tupla : table->table)
-			// 	{
-			// 		if (tupla.second.GetHostname().compare(command_values[1]))
-			// 		{
-			// 			macAddress = tupla.second.GetMacAddress();
-			// 			break;
-			// 		}
-			// 	}
-			// 	table->mutex_write.unlock();
+		while (ss >> word)
+			command_values.push_back(word);
 
-			// 	if (macAddress.size() > 0)
-			// 	{
-			// 		stringstream cmd;
-			// 		cmd << "wakeonlan " << macAddress;
-			// 		system(cmd.str().c_str());
-			// 	}
-			// }
+    if (command_values.size() == 0)
+      continue;
+		
+		if (station->GetType() == MANAGER && command_values.size() > 0) 
+		{
+      if (command_values.front().compare(CMD_WAKEUP) == 0) 
+      {
+      	std::string macAddress = "";
+        
+        station_table->mutex.lock();
+        if (station_table->has(command_values[1]))
+          macAddress = station_table->table[command_values[1]].first.macAddress;
+        station_table->mutex.unlock();
+
+      	if (macAddress.size() > 0)
+      	{
+      		std::stringstream cmd;
+      		cmd << "wakeonlan " << macAddress;
+      		system(cmd.str().c_str());
+      	}
+      }
 		}
 		
-		if (command_values[0].compare(CMD_EXIT) == 0)
-		{
-			station->SetStatus(EXITING);
-      auto leaving_message = network::create_packet(network::LEAVING, station->serialize());
-      network::datagram(INADDR_BROADCAST, leaving_message, params->logger, params->options);
-      params->ui_lock.unlock();
-		}
+		if (command_values.front().compare(CMD_EXIT) == 0)
+      discovery::leave(params);
     
-		if (command_values[0].compare(CMD_REFRESH) == 0)
+		if (command_values.front().compare(CMD_REFRESH) == 0)
       params->ui_lock.unlock();
 
     goto_input();
+    cout << flush;
   }
 
   return 0;

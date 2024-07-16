@@ -90,3 +90,12 @@ void *discovery::process_request(service_params_t *params, packet_t data, std::f
 	
 	return 0;
 }
+
+void discovery::leave(service_params_t *params)
+{
+  params->station->SetStatus(EXITING);
+  auto leaving_message = network::create_packet(network::LEAVING, params->station->serialize());
+  network::datagram(INADDR_BROADCAST, leaving_message, params->logger, params->options);
+  params->ui_lock.unlock();
+}
+
