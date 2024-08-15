@@ -45,14 +45,14 @@ namespace network
   struct sockaddr_in socket_address(in_addr_t addr, const int port);
 
   void *tcp_server(service_params_t *params);
-  void tcp_call_resolve(int sockfd, sockaddr_in client_addr, service_params_t *params, packet_t request_data, std::function<void(service_params_t*, packet_t, std::function<void(packet_t)>)> callback);
+  void tcp_call_resolve(int client_sockfd, sockaddr_in client_addr, service_params_t *params, packet_t request_data, std::function<void(service_params_t*, packet_t, std::function<void(packet_t)>, std::function<void()>)> callback);
 
   void *udp_server(service_params_t *params);
   void udp_call_resolve(int sockfd, sockaddr_in client_addr, service_params_t *params, packet_t request_data, std::function<void(service_params_t*, packet_t, std::function<void(packet_t)>)> callback);
 
   int open_socket(int sock_type, int timeout_sec, Logger *logger);
-	packet_t datagram(in_addr_t address, packet_t data, Logger *logger, options_t *options);
-	packet_t packet(in_addr_t address, packet_t data, Logger *logger, options_t *options);
+	packet_t datagram(in_addr_t address, packet_t data, Logger *logger, options_t *options, bool read_response = true);
+	packet_t packet(in_addr_t address, packet_t data, Logger *logger, options_t *options, bool read_response = true);
 
 	packet_t create_packet(MessageType type, station_serial station, short clock = 0, short seqn = 0, const std::string& payload = "");
 };

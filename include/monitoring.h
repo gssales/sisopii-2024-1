@@ -15,7 +15,7 @@ namespace monitoring
 
 	void proc_manager(service_params_t *params);
 
-	void *process_request(service_params_t *params, packet_t data, std::function<void(packet_t)> resolve);
+	void *process_request(service_params_t *params, packet_t data, std::function<void(packet_t)> resolve, std::function<void()> close);
 }
 
 #endif

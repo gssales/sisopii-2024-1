@@ -40,7 +40,7 @@ void discovery::proc_host(service_params_t *params)
 	if (station->GetManager() == NULL)
 	{
 		auto discovery_request = network::create_packet(network::DISCOVERY_REQUEST, station->serialize());
-		auto response = network::datagram(INADDR_BROADCAST, discovery_request, logger, options);
+		auto response = network::datagram(INADDR_BROADCAST, discovery_request, logger, options, true);
 		if (response.type == network::DISCOVERY_RESPONSE && response.status == network::SUCCESS)
 		{
 			Station manager;
@@ -95,7 +95,7 @@ void discovery::leave(service_params_t *params)
 {
   params->station->SetStatus(EXITING);
   auto leaving_message = network::create_packet(network::LEAVING, params->station->serialize());
-  network::datagram(INADDR_BROADCAST, leaving_message, params->logger, params->options);
+  network::datagram(INADDR_BROADCAST, leaving_message, params->logger, params->options, false);
   params->ui_lock.unlock();
 }
 

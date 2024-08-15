@@ -73,7 +73,7 @@ void monitoring::proc_manager(service_params_t *params)
 	std::this_thread::sleep_for(std::chrono::seconds(sleep));
 }
 
-void *monitoring::process_request(service_params_t *params, packet_t data, std::function<void(packet_t)> resolve) 
+void *monitoring::process_request(service_params_t *params, packet_t data, std::function<void(packet_t)> resolve, std::function<void()> close)
 {
   auto station = params->station;
 
@@ -84,8 +84,10 @@ void *monitoring::process_request(service_params_t *params, packet_t data, std::
       auto response = network::create_packet(network::MONITORING_RESPONSE, station->serialize(), station->GetClock());
       response.status = network::SUCCESS;
       resolve(response);
+			return 0;
     }
 	}
 	
+	close();
 	return 0;
 }

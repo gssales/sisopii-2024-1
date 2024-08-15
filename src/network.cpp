@@ -12,6 +12,7 @@
 #include "include/discovery.h"
 #include "include/monitoring.h"
 #include "include/utils.h"
+#include <unistd.h>
 
 std::string MessageType_to_string(MessageType type)
 {
@@ -58,6 +59,16 @@ packet_t create_error_packet(char* message)
   return p;
 }
 
+packet_t create_empty_packet()
+{
+  packet_t p;
+  p.type = UNKNOWN;
+  p.timestamp = now();
+  p.status = SUCCESS;
+  p.length = 0;
+  return p;
+}
+
 using namespace network;
 
 void *network::tcp_server(service_params_t *params)
@@ -68,14 +79,22 @@ void *network::tcp_server(service_params_t *params)
   
   int timeout = get_option(options, OPT_TIMEOUT, 1); // default 1 second
   int sockfd = open_socket(SOCK_STREAM, timeout, logger);
+	if (sockfd == -1)
+		return 0;
 
   int port = get_option(options, OPT_PORT_STREAM, TCP_PORT);
   struct sockaddr_in bound_addr = socket_address(INADDR_ANY, port);
-  if (bind(sockfd, (struct sockaddr *) &bound_addr, sizeof(struct sockaddr)) == -1)
+  if (bind(sockfd, (struct sockaddr *) &bound_addr, sizeof(struct sockaddr)) == -1) {
     logger->error("binding socket: ", strerror(errno));
+		close(sockfd);
+		return 0;
+	}
     
-  if (listen(sockfd, 10) == -1)
-    logger->error("listen: ", strerror(errno));
+	if (listen(sockfd, 10) == -1){
+		logger->error("listen: ", strerror(errno));
+		close(sockfd);
+		return 0;
+	}
 
   while (station->GetStatus() != EXITING)
   {
@@ -106,9 +125,10 @@ void *network::tcp_server(service_params_t *params)
     }
   }
   close(sockfd);
+	return 0;
 }
 
-void network::tcp_call_resolve(int client_sockfd, sockaddr_in client_addr, service_params_t *params, packet_t request_data, std::function<void(service_params_t*, packet_t, std::function<void(packet_t)>)> callback)
+void network::tcp_call_resolve(int client_sockfd, sockaddr_in client_addr, service_params_t *params, packet_t request_data, std::function<void(service_params_t*, packet_t, std::function<void(packet_t)>, std::function<void()>)> callback)
 {
 	auto resolve_callback = [client_sockfd, client_addr, params](packet_t response_data) 
 	{
@@ -120,16 +140,23 @@ void network::tcp_call_resolve(int client_sockfd, sockaddr_in client_addr, servi
     close(client_sockfd);
 	};
 
-	std::thread process_thread (callback, params, request_data, resolve_callback);
+	auto close_sock = [client_sockfd]() 
+	{
+    close(client_sockfd);
+	};
+
+	std::thread process_thread (callback, params, request_data, resolve_callback, close_sock);
 	process_thread.detach();
 }
 
-packet_t network::packet(in_addr_t address, packet_t data, Logger *logger, options_t *options)
+packet_t network::packet(in_addr_t address, packet_t data, Logger *logger, options_t *options, bool read_response /*= true*/)
 {
 	int timeout = get_option(options, OPT_TIMEOUT, 1);
 	int port = get_option(options, OPT_PORT_STREAM, TCP_PORT);
 
   int sockfd = open_socket(SOCK_STREAM, timeout, logger);
+	if (sockfd == -1)
+		return create_error_packet(strerror(errno));
 
   struct sockaddr_in sock_addr = socket_address(address, port);
   if (connect(sockfd, (const struct sockaddr *) &sock_addr, sizeof(sock_addr)) != 0) 
@@ -147,13 +174,16 @@ packet_t network::packet(in_addr_t address, packet_t data, Logger *logger, optio
     return create_error_packet(strerror(errno));
   }
 
-  packet_t response;
-	n = read(sockfd, &response, sizeof(packet_t));
-	if (n < 0)
-  {
-		logger->error("on read: ", strerror(errno));
-    response = create_error_packet(strerror(errno));
-  }
+  packet_t response =  create_empty_packet();
+	if (read_response)
+	{
+		n = read(sockfd, &response, sizeof(packet_t));
+		if (n < 0)
+		{
+			logger->error("on read: ", strerror(errno));
+			response = create_error_packet(strerror(errno));
+		}
+	}
 
   close(sockfd);
   return response;
@@ -168,11 +198,16 @@ void *network::udp_server(service_params_t *params)
 
   int timeout = get_option(options, OPT_TIMEOUT, 1); // default 1 second
   int sockfd = open_socket(SOCK_DGRAM, timeout, logger);
+	if (sockfd == -1)	
+		return 0;
 
   int port = get_option(options, OPT_PORT_DGRAM, UDP_PORT);
   struct sockaddr_in bound_addr = socket_address(INADDR_ANY, port);
-  if (bind(sockfd, (struct sockaddr *) &bound_addr, sizeof(struct sockaddr)) == -1)
+  if (bind(sockfd, (struct sockaddr *) &bound_addr, sizeof(struct sockaddr)) == -1) {
     logger->error("binding socket: ", strerror(errno));
+		close(sockfd);
+		return 0;
+	}
 
   while (station->GetStatus() != EXITING)
   {
@@ -200,6 +235,7 @@ void *network::udp_server(service_params_t *params)
     }
   }
   close(sockfd);
+	return 0;
 }
 
 void network::udp_call_resolve(int sockfd, sockaddr_in client_addr, service_params_t *params, packet_t request_data, std::function<void(service_params_t*, packet_t, std::function<void(packet_t)>)> callback)
@@ -216,12 +252,14 @@ void network::udp_call_resolve(int sockfd, sockaddr_in client_addr, service_para
 	process_thread.detach();
 }
 
-packet_t network::datagram(in_addr_t address, packet_t data, Logger *logger, options_t *options)
+packet_t network::datagram(in_addr_t address, packet_t data, Logger *logger, options_t *options, bool read_response /*= true*/)
 {
 	int timeout = get_option(options, OPT_TIMEOUT, 1);
 	int port = get_option(options, OPT_PORT_DGRAM, UDP_PORT);
 
   int sockfd = open_socket(SOCK_DGRAM, timeout, logger);
+	if (sockfd == -1)
+		return create_error_packet(strerror(errno));
 
   struct sockaddr_in sock_addr = socket_address(address, port);
   int n = sendto(sockfd, &data, sizeof(data), 0, (const struct sockaddr *) &sock_addr, sizeof(struct sockaddr_in));
@@ -232,15 +270,18 @@ packet_t network::datagram(in_addr_t address, packet_t data, Logger *logger, opt
     return create_error_packet(strerror(errno));
   }
     
-  packet_t response;
-  struct sockaddr_in from_addr;
-  socklen_t from_addr_len = sizeof(struct sockaddr_in);
-	n = recvfrom(sockfd, &response, sizeof(packet_t), 0, (struct sockaddr *) &from_addr, &from_addr_len);
-	if (n < 0)
-  {
-		logger->error("on recvfrom: ", strerror(errno));
-    response = create_error_packet(strerror(errno));
-  }
+  packet_t response = create_empty_packet();
+	if (read_response)
+	{
+		struct sockaddr_in from_addr;
+		socklen_t from_addr_len = sizeof(struct sockaddr_in);
+		n = recvfrom(sockfd, &response, sizeof(packet_t), 0, (struct sockaddr *) &from_addr, &from_addr_len);
+		if (n < 0)
+		{
+			logger->error("on recvfrom: ", strerror(errno));
+			response = create_error_packet(strerror(errno));
+		}
+	}
 
   close(sockfd);
   return response;
@@ -260,21 +301,44 @@ packet_t network::create_packet(MessageType type, station_serial station, short 
 	return p;
 };
 
+std::string socket_type_to_string(int sock_type)
+{
+	switch (sock_type)
+	{
+	case SOCK_STREAM:
+		return "SOCK_STREAM";
+	case SOCK_DGRAM:
+		return "SOCK_DGRAM";
+	default:
+		return "UNKNOWN";
+	}
+}
+
 int network::open_socket(int sock_type, int timeout_sec, Logger *logger)
 {
   int sockfd;
-  if ((sockfd = socket(AF_INET, sock_type, 0)) == -1) 
+  if ((sockfd = socket(AF_INET, sock_type, 0)) == -1) {
     logger->error("opening socket: ", strerror(errno));
-      
+		logger->error(" socket type: " + socket_type_to_string(sock_type), strerror(errno));
+		return -1;
+	}
+
   struct timeval timeout; // Needs a timeout to finish the program
   timeout.tv_sec = timeout_sec;
   timeout.tv_usec = 1; // 1us timeout
   if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) == -1)
-    logger->error("option timeout: ", strerror(errno));
+    logger->error("option rcv timeout: ", strerror(errno));
       
+  if (setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) == -1)
+    logger->error("option snd timeout: ", strerror(errno));
+      
+
   int broadcastEnable = 1;
-  if (setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST, &broadcastEnable, sizeof(broadcastEnable)) == -1)
+  if (setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST, &broadcastEnable, sizeof(broadcastEnable)) == -1) {
     logger->error("option broadcast: ", strerror(errno));
+		close(sockfd);
+		return -1;
+	}
 
   return sockfd;
 }
