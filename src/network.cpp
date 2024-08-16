@@ -11,6 +11,7 @@
 
 #include "include/discovery.h"
 #include "include/monitoring.h"
+#include "include/replication.h"
 #include "include/utils.h"
 #include <unistd.h>
 
@@ -117,6 +118,11 @@ void *network::tcp_server(service_params_t *params)
         case MONITORING_RESPONSE:
           tcp_call_resolve(client_sockfd, client_addr, params, client_data, monitoring::process_request);
           break;
+
+				case REPLICATION_REQUEST:
+				case REPLICATION_RESPONSE:
+					tcp_call_resolve(client_sockfd, client_addr, params, client_data, replication::process_request);
+					break;
         
         default:
           break;

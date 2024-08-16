@@ -131,6 +131,9 @@ class StationTable
       this->has_update = false;
     }
 
+    station_serial* serialize();
+    static void deserialize(StationTable* table, struct station_serial serialized[5]);
+
     std::map<std::string, std::pair<station_serial, station_item>> clone();
     bool has(std::string key);
     

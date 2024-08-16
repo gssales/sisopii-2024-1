@@ -20,7 +20,9 @@ namespace network
 		DISCOVERY_RESPONSE,
 		MONITORING_REQUEST,
 		MONITORING_RESPONSE,
-		LEAVING
+		LEAVING,
+		REPLICATION_REQUEST,
+		REPLICATION_RESPONSE
 	};
 
 	enum RequestStatus: unsigned short
@@ -40,6 +42,7 @@ namespace network
     unsigned short length; //Comprimento do payload
     char message[255]; //Dados da mensagem
     station_serial station;
+		station_serial table[5];
   } packet_t;
   
   struct sockaddr_in socket_address(in_addr_t addr, const int port);
