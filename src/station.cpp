@@ -180,18 +180,16 @@ std::map<std::string, std::pair<station_serial, station_item>> StationTable::clo
   return clone;
 }
 
-station_serial* StationTable::serialize()
+void StationTable::serialize(station_serial *arr)
 {
-  station_serial *serialized = new station_serial[5];
   int i = 0;
   this->mutex.lock();
   for (auto &host_pair : this->table)
   {
-    serialized[i] = host_pair.second.first;
+    memcpy(arr+i, &host_pair.second.first, sizeof(station_serial));
     i++;
   }
   this->mutex.unlock();
-  return serialized;
 }
 
 void StationTable::deserialize(StationTable *table, station_serial *serialized)
@@ -199,8 +197,6 @@ void StationTable::deserialize(StationTable *table, station_serial *serialized)
   table->mutex.lock();
   for (int i = 0; i < 5; i++)
   {
-    if (serialized[i].hostname[0] == '\0')
-      break;
     table->table.insert_or_assign(serialized[i].hostname, std::pair(serialized[i], station_item()));
   }
   table->mutex.unlock();
