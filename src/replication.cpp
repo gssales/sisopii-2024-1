@@ -19,7 +19,7 @@ void *replication::service(service_params_t *params)
 		 * Busca manager
 		 */
 		if (station->GetType() == HOST)
-			proc_host(params);
+			break;
 	}
 	return 0;
 }

@@ -119,10 +119,10 @@ void *network::tcp_server(service_params_t *params)
           tcp_call_resolve(client_sockfd, client_addr, params, client_data, monitoring::process_request);
           break;
 
-				case REPLICATION_REQUEST:
-				case REPLICATION_RESPONSE:
-					tcp_call_resolve(client_sockfd, client_addr, params, client_data, replication::process_request);
-					break;
+				// case REPLICATION_REQUEST:
+				// case REPLICATION_RESPONSE:
+				// 	tcp_call_resolve(client_sockfd, client_addr, params, client_data, replication::process_request);
+				// 	break;
         
         default:
           break;
