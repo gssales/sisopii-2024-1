@@ -116,6 +116,16 @@ void Station::print()
   std::cout << "IP Address: " << this->ipAddress << std::endl << std::endl;
 }
 
+std::string Station::to_string()
+{
+  std::string str = "Pid: " + std::to_string(this->pid) + ";";
+  str += "Hostname: " + this->hostname + ";";
+  str += "MAC Address: " + this->macAddress + ";";
+  str += "Interface: " + this->interface + ";";
+  str += "IP Address: " + this->ipAddress + ";";
+  return str;
+}
+
 struct station_serial Station::serialize()
 {
   struct station_serial serialized;

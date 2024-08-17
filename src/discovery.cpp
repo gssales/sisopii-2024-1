@@ -43,9 +43,9 @@ void discovery::proc_host(service_params_t *params)
 		auto response = network::datagram(INADDR_BROADCAST, discovery_request, logger, options, true);
 		if (response.type == network::DISCOVERY_RESPONSE && response.status == network::SUCCESS)
 		{
-			Station manager;
-			Station::deserialize(&manager, response.station);
-			station->SetManager(&manager);
+			auto manager = new Station();
+			Station::deserialize(manager, response.station);
+			station->SetManager(manager);
 			params->ui_lock.unlock();
 		}
 	}
