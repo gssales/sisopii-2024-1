@@ -7,14 +7,9 @@ using namespace network;
 
 namespace replication
 {
-
-	void *service(service_params_t *params);
-
-	void proc_host(service_params_t *params);
-
-	void proc_manager(service_params_t *params);
-
 	void *process_request(service_params_t *params, packet_t data, std::function<void(packet_t)> resolve, std::function<void()> close);
+
+	void replicate(service_params_t *params);
 }
 
 #endif

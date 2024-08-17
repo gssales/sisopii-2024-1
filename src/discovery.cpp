@@ -4,6 +4,8 @@
 #include <thread>
 #include <chrono>
 
+#include "include/replication.h"
+
 using namespace discovery;
 
 void *discovery::service(service_params_t *params)
@@ -66,6 +68,7 @@ void *discovery::process_request(service_params_t *params, packet_t data, std::f
 		if (data.type == network::DISCOVERY_REQUEST)
 		{
 			station_table->insert(data.station.hostname, data.station);
+			replication::replicate(params);
 			params->ui_lock.unlock();
 
 			auto response = network::create_packet(network::DISCOVERY_RESPONSE, station->serialize(), station->GetClock());
@@ -75,6 +78,7 @@ void *discovery::process_request(service_params_t *params, packet_t data, std::f
 		else if (data.type == network::LEAVING)
 		{	
 			station_table->remove(data.station.hostname);
+			replication::replicate(params);
 			params->ui_lock.unlock();
 		}
 	}

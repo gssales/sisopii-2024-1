@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <thread>
+#include "include/replication.h"
 #include "include/utils.h"
 
 using namespace monitoring;
@@ -58,6 +59,7 @@ void monitoring::proc_manager(service_params_t *params)
       {
         station_table->update_retry(hostname, 0);
         station_table->update(hostname, AWAKEN, host.type);
+        replication::replicate(params);
         params->ui_lock.unlock();
       } 
       else if (host.status != ASLEEP) 
@@ -65,6 +67,7 @@ void monitoring::proc_manager(service_params_t *params)
         station_table->update_retry(hostname, host_info.retry_counter + 1);
         if (host_info.retry_counter + 1 >= max_retry)
           station_table->update(hostname, ASLEEP, host.type);
+        replication::replicate(params);
         params->ui_lock.unlock();
       }
     }
