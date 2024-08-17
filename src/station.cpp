@@ -7,6 +7,21 @@
 #include <iostream>
 #include "include/utils.h"
 
+std::string StationType_to_string(StationType type)
+{
+  switch (type)
+  {
+  case MANAGER:
+    return "MANAGER";
+  case HOST:
+    return "HOST";
+  case CANDIDATE:
+    return "CANDIDATE";
+  default:
+    return "UNKNOWN";
+  }
+}
+
 std::string StationStatus_to_string(StationStatus status)
 {
   switch (status)
@@ -202,10 +217,11 @@ void StationTable::serialize(station_serial *arr)
   this->mutex.unlock();
 }
 
-void StationTable::deserialize(StationTable *table, station_serial *serialized)
+void StationTable::deserialize(StationTable *table, station_serial serialized[5], unsigned short table_count)
 {
   table->mutex.lock();
-  for (int i = 0; i < 5; i++)
+  table->table.clear();
+  for (int i = 0; i < table_count; i++)
   {
     table->table.insert_or_assign(serialized[i].hostname, std::pair(serialized[i], station_item()));
   }

@@ -18,6 +18,7 @@ enum StationType : uint8_t
   HOST,
   CANDIDATE
 };
+std::string StationType_to_string(StationType type);
 
 enum StationStatus : uint8_t 
 {
@@ -133,7 +134,7 @@ class StationTable
     }
 
     void serialize(station_serial *arr);
-    static void deserialize(StationTable* table, struct station_serial serialized[5]);
+    static void deserialize(StationTable* table, struct station_serial serialized[5], unsigned short table_count);
 
     std::map<std::string, std::pair<station_serial, station_item>> clone();
     bool has(std::string key);

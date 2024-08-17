@@ -57,6 +57,7 @@ packet_t create_error_packet(char* message)
   p.status = FAIL;
   p.length = strlen(message);
   strcpy(p.message, message);
+  p.table_size = 0;
   return p;
 }
 
@@ -67,6 +68,7 @@ packet_t create_empty_packet()
   p.timestamp = now();
   p.status = SUCCESS;
   p.length = 0;
+  p.table_size = 0;
   return p;
 }
 
@@ -304,6 +306,7 @@ packet_t network::create_packet(MessageType type, station_serial station, short 
 	p.length = sizeof(payload);
 	strcpy(p.message, payload.c_str());
 	p.station = station;
+  p.table_size = 0;
 	return p;
 };
 

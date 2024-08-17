@@ -112,35 +112,19 @@ void *interface::interface(service_params_t *params)
   while (station->GetStatus() != EXITING) 
   {
     params->ui_lock.lock();
-    if (station->GetType() == MANAGER)
-    {
-      if (station_table->has_update)
-      {
-        for (int i = 0; i < 10; i++)
-          cout << "\033[" << (3+i) << ";1H \033[K" << endl;
-        
-        gotoxy(1, 3);
-        station_table->mutex.lock();
-        for (auto &host_pair : station_table->table)
-          print_row(host_pair.second, options);
-        station_table->mutex.unlock();
-        goto_input();
-
-        station_table->has_update = false;
-      }
-    }
-    else if (station->has_update)
+    if (station_table->has_update)
     {
       for (int i = 0; i < 10; i++)
         cout << "\033[" << (3+i) << ";1H \033[K" << endl;
-
-      gotoxy(1, 3);
-      if (station->GetManager() != NULL)
-        print_row(station->GetManager());
-      print_row(station);
-      goto_input();
       
-      station->has_update = false;
+      gotoxy(1, 3);
+      station_table->mutex.lock();
+      for (auto &host_pair : station_table->table)
+        print_row(host_pair.second, options);
+      station_table->mutex.unlock();
+      goto_input();
+
+      station_table->has_update = false;
     }
 
     if (logger->has_changes)

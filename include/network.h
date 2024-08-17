@@ -43,6 +43,7 @@ namespace network
     char message[255]; //Dados da mensagem
     station_serial station;
 		station_serial table[5];
+		unsigned short table_size;
   } packet_t;
   
   struct sockaddr_in socket_address(in_addr_t addr, const int port);

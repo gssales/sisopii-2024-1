@@ -14,6 +14,7 @@ void replication::replicate(service_params_t *params)
 	{
 		auto replication_request = network::create_packet(MessageType::REPLICATION_REQUEST, station->serialize(), station_table->clock, 0);
 		station_table->serialize(replication_request.table);
+		replication_request.table_size = station_table->table.size();
   	
 		for (auto &host_pair : station_table->clone())
 		{
@@ -51,7 +52,7 @@ void *replication::process_request(service_params_t *params, packet_t data, std:
 		{
 			if (data.type == MessageType::REPLICATION_REQUEST && data.clock > station_table->clock)
 			{
-				StationTable::deserialize(station_table, data.table);
+				StationTable::deserialize(station_table, data.table, data.table_size);
 				station_table->clock = data.clock;
 				station_table->has_update = true;
 				params->ui_lock.unlock();
