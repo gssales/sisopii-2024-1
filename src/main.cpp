@@ -33,6 +33,7 @@ int main(int argc, const char *argv[]) {
 	options[OPT_REFRESH] = 10;
 	options[OPT_RETRY] = 2;
 	options[OPT_DEBUG] = 0;
+	options[OPT_GENERATE_PID] = 0;
 	parseOptions(argc, argv, &options);
 
 	params.options = &options;
@@ -41,6 +42,8 @@ int main(int argc, const char *argv[]) {
 	station->init();
 	if (get_option(&options, OPT_MANAGER, 0) == 1)
 		station->SetType(MANAGER);
+	if (get_option(&options, OPT_GENERATE_PID, 0) == 1)
+		station->GeneratePid();
 	params.station = station;
 
 	auto station_table = new StationTable();

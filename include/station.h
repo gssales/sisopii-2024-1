@@ -66,6 +66,7 @@ public:
   void init();
   void print();
   std::string to_string();
+  void GeneratePid();
   
   struct station_serial serialize();
   static void deserialize(Station* station, struct station_serial serialized);

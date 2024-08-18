@@ -141,6 +141,12 @@ std::string Station::to_string()
   return str;
 }
 
+void Station::GeneratePid()
+{
+  unsigned long timestamp = now();
+  this->pid = timestamp % 1000;
+}
+
 struct station_serial Station::serialize()
 {
   struct station_serial serialized;

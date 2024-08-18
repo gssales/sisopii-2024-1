@@ -12,6 +12,7 @@
 #define OPT_SLEEP "-sleep"
 #define OPT_REFRESH "-refresh"
 #define OPT_RETRY "-retry"
+#define OPT_GENERATE_PID "-generate-pid"
 
 typedef std::map<std::string, int> options_t;
 

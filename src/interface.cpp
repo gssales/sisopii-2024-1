@@ -23,9 +23,17 @@ void gotoxy(int x, int y)
   cout << "\033[" << y << ";" << x << "H";
 }
 
-void print_cell(string value, int width)
+void print_cell(unsigned short value, int width)
 {
-  cout << left << setw(width) << setfill(' ') << value;
+  cout << right << setw(width-1) << setfill(' ') << value << " ";
+}
+
+void print_cell(string value, int width, bool align_right = false)
+{
+  if (align_right)
+    cout << right << setw(width-1) << setfill(' ') << value << " ";
+  else
+    cout << left << setw(width) << setfill(' ') << value;
 }
 
 void print_hr()
@@ -38,27 +46,12 @@ void header()
 {  
   print_cell(" ", 3);
   print_cell("HOSTNAME", 30);
+  print_cell("PID", 8, true);
   print_cell("MAC ADDRESS", 20);
   print_cell("IP ADDRESS", 20);
   print_cell("STATUS", 10);
   cout << endl;
   print_hr();
-  cout << endl;
-}
-
-void print_row(Station *station)
-{
-  std::string type = "  ";
-  if (station->GetType() == MANAGER)
-    type = " *";
-  else if (station->GetType() == CANDIDATE)
-    type = " ?";
-
-  print_cell(type, 3);
-  print_cell(station->GetHostname(), 30);
-  print_cell(station->GetMacAddress(), 20);
-  print_cell(station->GetIpAddress(), 20);
-  print_cell(StationStatus_to_string(station->GetStatus()), 20);
   cout << endl;
 }
 
@@ -75,6 +68,7 @@ void print_row(std::pair<station_serial, station_item> station, options_t *optio
   
   print_cell(type, 3);
   print_cell(host.hostname, 30);
+  print_cell(host.pid, 8);
   print_cell(host.macAddress, 20);
   print_cell(host.ipAddress, 20);
   if (host_info.retry_counter > 0)
