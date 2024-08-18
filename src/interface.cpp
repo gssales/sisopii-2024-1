@@ -10,6 +10,10 @@
 #include "include/discovery.h"
 #include "include/utils.h"
 
+#define WHITE_BG "\033[47m"
+#define BLACK_FG "\033[30m"
+#define YELLOW_FG "\033[33m"
+#define RESET "\033[0m"
 
 using namespace std;
 
@@ -55,7 +59,7 @@ void header()
   cout << endl;
 }
 
-void print_row(std::pair<station_serial, station_item> station, options_t *options)
+void print_row(std::pair<station_serial, station_item> station, bool current, options_t *options)
 {
   std::string type = "  ";
   if (station.first.type == MANAGER)
@@ -66,8 +70,13 @@ void print_row(std::pair<station_serial, station_item> station, options_t *optio
   auto host = station.first;
   auto host_info = station.second;
   
+  if (current)
+    cout << YELLOW_FG;
   print_cell(type, 3);
-  print_cell(host.hostname, 30);
+  if (current)
+    print_cell("["+string(host.hostname)+"]", 30);
+  else
+    print_cell(host.hostname, 30);
   print_cell(host.pid, 8);
   print_cell(host.macAddress, 20);
   print_cell(host.ipAddress, 20);
@@ -80,6 +89,8 @@ void print_row(std::pair<station_serial, station_item> station, options_t *optio
   }
   else
     print_cell(StationStatus_to_string(host.status), 20);
+  if (current)
+    cout << RESET;
   cout << endl;
 }
 
@@ -115,7 +126,7 @@ void *interface::interface(service_params_t *params)
       auto list = station_table->list(0);
       station_table->mutex.lock();
       for (auto &host_pair : list)
-        print_row(host_pair, options);
+        print_row(host_pair, station->GetMacAddress().compare(host_pair.first.macAddress) == 0, options);
       station_table->mutex.unlock();
       goto_input();
 
