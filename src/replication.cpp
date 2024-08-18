@@ -34,7 +34,6 @@ void replication::replicate(service_params_t *params, const std::string& payload
 		auto responses = future_responses.get();
 		for (auto &response : responses)
 		{
-			params->logger->info(print_packet(response.second));
 			if (response.second.status == network::SUCCESS)
 				addrs.erase(std::remove(addrs.begin(), addrs.end(), response.first), addrs.end());
 		}

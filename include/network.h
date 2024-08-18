@@ -63,6 +63,7 @@ namespace network
 	std::string print_packet(packet_t packet);
 
 	std::future<std::vector<std::pair<in_addr_t,packet_t>>> multicast(std::vector<in_addr_t> addrs, packet_t data, Logger *logger, options_t *options, bool read_response = true);
+	std::future<std::vector<std::pair<station_serial,packet_t>>> multicast(std::vector<station_serial> stations, packet_t data, Logger *logger, options_t *options, bool read_response = true);
 };
 
 #endif

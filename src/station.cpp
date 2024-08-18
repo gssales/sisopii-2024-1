@@ -291,15 +291,19 @@ void StationTable::update(std::string key, StationStatus new_status, StationType
   }
 }
 
-void StationTable::update_retry(std::string key, uint8_t retry_counter)
+uint8_t StationTable::update_retry(std::string key, bool reset)
 {
   if (this->has(key))
   {
     this->mutex.lock();
-    if (this->table[key].second.retry_counter != retry_counter)
+    auto counter = this->table[key].second.retry_counter;
+    counter = reset ? 0 : counter + 1;
+    if (this->table[key].second.retry_counter != counter)
       this->has_update = true;
     this->table[key].second.last_update = now();
-    this->table[key].second.retry_counter = retry_counter;
+    this->table[key].second.retry_counter = counter;
     this->mutex.unlock();
+    return counter;
   }
+  return 0;
 }

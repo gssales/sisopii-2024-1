@@ -381,9 +381,7 @@ std::future<std::vector<std::pair<in_addr_t,packet_t>>> network::multicast(std::
 {
   auto worker_packet = [data, logger, options, read_response](std::promise<std::pair<in_addr_t,packet_t>> promise, in_addr_t addr)
   {
-    logger->info("Sending multicast request");
     auto response = packet(addr, data, logger, options, read_response);
-    logger->info("Got multicast response");
     promise.set_value(std::pair(addr,response));
   };
 
@@ -400,11 +398,41 @@ std::future<std::vector<std::pair<in_addr_t,packet_t>>> network::multicast(std::
     std::vector<std::pair<in_addr_t,packet_t>> responses;
     for (auto &f : futures)
       responses.push_back(f.get());
-    logger->info("Multicast finished");
     promise.set_value(responses);
   };
 
   std::promise<std::vector<std::pair<in_addr_t,packet_t>>> p;
+  auto f = p.get_future();
+  std::thread(worker, std::move(p)).detach();
+
+  return f;
+}
+
+std::future<std::vector<std::pair<station_serial,packet_t>>> network::multicast(std::vector<station_serial> stations, packet_t data, Logger *logger, options_t *options, bool read_response /*= true*/)
+{
+  auto worker_packet = [data, logger, options, read_response](std::promise<std::pair<station_serial,packet_t>> promise, station_serial station)
+  {
+    auto response = packet(inet_addr(station.ipAddress), data, logger, options, read_response);
+    promise.set_value(std::pair(station,response));
+  };
+
+  auto worker = [stations, data, logger, options, read_response, worker_packet](std::promise<std::vector<std::pair<station_serial,packet_t>>> promise)
+  {
+    std::vector<std::future<std::pair<station_serial,packet_t>>> futures;
+    for (const auto &station : stations)
+    {
+      std::promise<std::pair<station_serial,packet_t>> p;
+      futures.push_back(p.get_future());
+      std::thread(worker_packet, std::move(p), station).detach();
+    }
+
+    std::vector<std::pair<station_serial,packet_t>> responses;
+    for (auto &f : futures)
+      responses.push_back(f.get());
+    promise.set_value(responses);
+  };
+
+  std::promise<std::vector<std::pair<station_serial,packet_t>>> p;
   auto f = p.get_future();
   std::thread(worker, std::move(p)).detach();
 

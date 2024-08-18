@@ -144,7 +144,7 @@ class StationTable
     void insert(std::string key, station_serial item);
     void remove(std::string key);
     void update(std::string key, StationStatus new_status, StationType new_type);
-    void update_retry(std::string key, uint8_t retry_counter);
+    uint8_t update_retry(std::string key, bool reset);
 };
 
 #endif
