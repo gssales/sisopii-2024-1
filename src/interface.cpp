@@ -119,18 +119,18 @@ void *interface::interface(service_params_t *params)
     params->ui_lock.lock();
     if (station_table->has_update)
     {
+      auto list = station_table->list(0);
+      station_table->mutex.lock();
       for (int i = 0; i < 10; i++)
         cout << "\033[" << (3+i) << ";1H \033[K" << endl;
       
       gotoxy(1, 3);
-      auto list = station_table->list(0);
-      station_table->mutex.lock();
       for (auto &host_pair : list)
         print_row(host_pair, station->GetMacAddress().compare(host_pair.first.macAddress) == 0, options);
-      station_table->mutex.unlock();
       goto_input();
 
       station_table->has_update = false;
+      station_table->mutex.unlock();
     }
 
     if (logger->has_changes)
