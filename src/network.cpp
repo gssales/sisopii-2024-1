@@ -29,6 +29,10 @@ std::string MessageType_to_string(MessageType type)
     return "MONITORING_RESPONSE";
   case LEAVING:
     return "LEAVING";
+  case REPLICATION_REQUEST:
+    return "REPLICATION_REQUEST";
+  case REPLICATION_RESPONSE:
+    return "REPLICATION_RESPONSE";
   default:
     return "UNKNOWN";
   }
@@ -309,6 +313,17 @@ packet_t network::create_packet(MessageType type, station_serial station, short 
   p.table_size = 0;
 	return p;
 };
+
+std::string network::print_packet(packet_t packet)
+{
+  std::string str = "Type: " + MessageType_to_string(packet.type) + "; ";
+  str += "Timestamp: " + std::to_string(packet.timestamp) + "; ";
+  str += "Clock: " + std::to_string(packet.clock) + "; ";
+  str += "Status: " + RequestStatus_to_string(packet.status) + "; ";
+  str += "Message: " + std::string(packet.message) + "; ";
+  str += "Table Size: " + std::to_string(packet.table_size) + "; ";
+  return str;
+}
 
 std::string socket_type_to_string(int sock_type)
 {

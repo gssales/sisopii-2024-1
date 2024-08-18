@@ -59,6 +59,8 @@ namespace network
 	packet_t packet(in_addr_t address, packet_t data, Logger *logger, options_t *options, bool read_response = true);
 
 	packet_t create_packet(MessageType type, station_serial station, short clock = 0, short seqn = 0, const std::string& payload = "");
+	std::string print_packet(packet_t packet);
+
 };
 
 #endif

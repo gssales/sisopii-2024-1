@@ -11,6 +11,7 @@ using namespace discovery;
 void *discovery::service(service_params_t *params)
 {
 	auto station = params->station;
+	int sleep = get_option(params->options, OPT_SLEEP, 5);
 	while (station->GetStatus() != EXITING)
 	{
 		/*
@@ -18,7 +19,7 @@ void *discovery::service(service_params_t *params)
 		 * Termina thread
 		 */
 		if (station->GetType() == MANAGER)
-			break;
+			std::this_thread::sleep_for(std::chrono::seconds(sleep));
 		
 		/*
 		 * Na estação participante, o serviço de discory é ativo
@@ -68,7 +69,7 @@ void *discovery::process_request(service_params_t *params, packet_t data, std::f
 		if (data.type == network::DISCOVERY_REQUEST)
 		{
 			station_table->insert(data.station.hostname, data.station);
-			replication::replicate(params);
+			replication::replicate(params, "Station inserted");
 			params->ui_lock.unlock();
 
 			auto response = network::create_packet(network::DISCOVERY_RESPONSE, station->serialize(), station->GetClock());
@@ -78,14 +79,14 @@ void *discovery::process_request(service_params_t *params, packet_t data, std::f
 		else if (data.type == network::LEAVING)
 		{	
 			station_table->remove(data.station.hostname);
-			replication::replicate(params);
+			replication::replicate(params, "Station removed");
 			params->ui_lock.unlock();
 		}
 	}
 
 	if (station->GetType() == HOST)
 	{
-		if (data.type == network::LEAVING && station->GetManager()->GetMacAddress().compare(data.station.macAddress) == 0)
+		if (data.type == network::LEAVING && station->GetManager() != NULL && station->GetManager()->GetMacAddress().compare(data.station.macAddress) == 0)
 		{
 			station->SetManager(NULL);
 			params->ui_lock.unlock();

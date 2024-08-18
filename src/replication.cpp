@@ -6,13 +6,13 @@
 
 using namespace replication;
 
-void replication::replicate(service_params_t *params)
+void replication::replicate(service_params_t *params, const std::string& payload)
 {
 	auto station = params->station;
 	auto station_table = params->station_table;
 	if (station->GetType() == MANAGER && station_table->has_update)
 	{
-		auto replication_request = network::create_packet(MessageType::REPLICATION_REQUEST, station->serialize(), station_table->clock, 0);
+		auto replication_request = network::create_packet(MessageType::REPLICATION_REQUEST, station->serialize(), station_table->clock, 0, payload);
 		station_table->serialize(replication_request.table);
 		replication_request.table_size = station_table->table.size();
   	
@@ -56,7 +56,10 @@ void *replication::process_request(service_params_t *params, packet_t data, std:
 				station_table->clock = data.clock;
 				station_table->has_update = true;
 				params->ui_lock.unlock();
-				resolve(network::create_packet(MessageType::REPLICATION_RESPONSE, station->serialize(), station_table->clock, 0));
+
+				auto response = network::create_packet(MessageType::REPLICATION_RESPONSE, station->serialize(), station_table->clock, 0);
+				response.status = network::SUCCESS;
+				resolve(response);
 				return 0;
 			}
 		}

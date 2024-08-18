@@ -10,7 +10,7 @@ using namespace monitoring;
 void *monitoring::service(service_params_t *params)
 {
   auto station = params->station;
-
+	int sleep = get_option(params->options, OPT_SLEEP, 5);
   while (station->GetStatus() != EXITING)
   {
     /**
@@ -25,7 +25,7 @@ void *monitoring::service(service_params_t *params)
      * Termina thread
      */
     if (station->GetType() == HOST)
-      break;
+			std::this_thread::sleep_for(std::chrono::seconds(sleep));
   }
   return 0;
 }
@@ -59,7 +59,7 @@ void monitoring::proc_manager(service_params_t *params)
       {
         station_table->update_retry(hostname, 0);
         station_table->update(hostname, AWAKEN, host.type);
-        replication::replicate(params);
+        replication::replicate(params, "Host awaken");
         params->ui_lock.unlock();
       } 
       else if (host.status != ASLEEP) 
@@ -67,7 +67,7 @@ void monitoring::proc_manager(service_params_t *params)
         station_table->update_retry(hostname, host_info.retry_counter + 1);
         if (host_info.retry_counter + 1 >= max_retry)
           station_table->update(hostname, ASLEEP, host.type);
-        replication::replicate(params);
+        replication::replicate(params, "Host asleep");
         params->ui_lock.unlock();
       }
     }
