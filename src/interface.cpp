@@ -112,9 +112,10 @@ void *interface::interface(service_params_t *params)
         cout << "\033[" << (3+i) << ";1H \033[K" << endl;
       
       gotoxy(1, 3);
+      auto list = station_table->list(0);
       station_table->mutex.lock();
-      for (auto &host_pair : station_table->table)
-        print_row(host_pair.second, options);
+      for (auto &host_pair : list)
+        print_row(host_pair, options);
       station_table->mutex.unlock();
       goto_input();
 

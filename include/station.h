@@ -138,6 +138,7 @@ class StationTable
     static void deserialize(StationTable* table, struct station_serial serialized[5], unsigned short table_count);
 
     std::map<std::string, std::pair<station_serial, station_item>> clone();
+    std::list<std::pair<station_serial, station_item>> list(unsigned short pid);
     bool has(std::string key);
     
     void insert(std::string key, station_serial item);

@@ -211,6 +211,20 @@ std::map<std::string, std::pair<station_serial, station_item>> StationTable::clo
   return clone;
 }
 
+std::list<std::pair<station_serial, station_item>> StationTable::list(unsigned short pid)
+{
+  std::list<std::pair<station_serial, station_item>> list;
+  this->mutex.lock();
+  for (auto &host_pair : this->table)
+  {
+    if (host_pair.second.first.pid > pid)
+      list.push_back(host_pair.second);
+  }
+  list.sort([](auto &a, auto &b) { return a.first.pid > b.first.pid; });
+  this->mutex.unlock();
+  return list;
+}
+
 void StationTable::serialize(station_serial *arr)
 {
   int i = 0;
