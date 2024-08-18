@@ -228,16 +228,14 @@ std::list<std::pair<station_serial, station_item>> StationTable::list(unsigned s
 void StationTable::serialize(station_serial *arr)
 {
   int i = 0;
-  this->mutex.lock();
   for (auto &host_pair : this->table)
   {
     memcpy(arr+i, &host_pair.second.first, sizeof(station_serial));
     i++;
   }
-  this->mutex.unlock();
 }
 
-void StationTable::deserialize(StationTable *table, station_serial serialized[5], unsigned short table_count)
+void StationTable::deserialize(StationTable *table, station_serial serialized[5], unsigned short table_count, unsigned int clock)
 {
   table->mutex.lock();
   table->table.clear();
@@ -245,6 +243,8 @@ void StationTable::deserialize(StationTable *table, station_serial serialized[5]
   {
     table->table.insert_or_assign(serialized[i].hostname, std::pair(serialized[i], station_item()));
   }
+  table->clock = clock;
+  table->has_update = true;
   table->mutex.unlock();
 }
 

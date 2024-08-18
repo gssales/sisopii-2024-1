@@ -376,3 +376,37 @@ struct sockaddr_in network::socket_address(in_addr_t addr, const int port)
   memset(&(address.sin_zero), 0, 8);
   return address;
 }
+
+std::future<std::vector<std::pair<in_addr_t,packet_t>>> network::multicast(std::vector<in_addr_t> addrs, packet_t data, Logger *logger, options_t *options, bool read_response /*= true*/)
+{
+  auto worker_packet = [data, logger, options, read_response](std::promise<std::pair<in_addr_t,packet_t>> promise, in_addr_t addr)
+  {
+    logger->info("Sending multicast request");
+    auto response = packet(addr, data, logger, options, read_response);
+    logger->info("Got multicast response");
+    promise.set_value(std::pair(addr,response));
+  };
+
+  auto worker = [addrs, data, logger, options, read_response, worker_packet](std::promise<std::vector<std::pair<in_addr_t,packet_t>>> promise)
+  {
+    std::vector<std::future<std::pair<in_addr_t,packet_t>>> futures;
+    for (const auto &addr : addrs)
+    {
+      std::promise<std::pair<in_addr_t,packet_t>> p;
+      futures.push_back(p.get_future());
+      std::thread(worker_packet, std::move(p), addr).detach();
+    }
+
+    std::vector<std::pair<in_addr_t,packet_t>> responses;
+    for (auto &f : futures)
+      responses.push_back(f.get());
+    logger->info("Multicast finished");
+    promise.set_value(responses);
+  };
+
+  std::promise<std::vector<std::pair<in_addr_t,packet_t>>> p;
+  auto f = p.get_future();
+  std::thread(worker, std::move(p)).detach();
+
+  return f;
+}

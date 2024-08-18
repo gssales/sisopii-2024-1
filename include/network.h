@@ -2,6 +2,7 @@
 #define _NETWORK_H
 
 #include <arpa/inet.h>
+#include <future>
 
 #include "include/station.h"
 #include "include/options_parser.h"
@@ -61,6 +62,7 @@ namespace network
 	packet_t create_packet(MessageType type, station_serial station, short clock = 0, short seqn = 0, const std::string& payload = "");
 	std::string print_packet(packet_t packet);
 
+	std::future<std::vector<std::pair<in_addr_t,packet_t>>> multicast(std::vector<in_addr_t> addrs, packet_t data, Logger *logger, options_t *options, bool read_response = true);
 };
 
 #endif
