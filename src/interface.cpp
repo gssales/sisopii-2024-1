@@ -65,7 +65,10 @@ void print_row(std::pair<station_serial, station_item> station, bool current, op
   if (station.first.type == MANAGER)
     type = " *";
   else if (station.first.type == CANDIDATE)
-    type = " ?";
+    if (station.first.status == ELECTING)
+      type = " !";
+    else
+      type = " ?";
 
   auto host = station.first;
   auto host_info = station.second;
@@ -202,7 +205,11 @@ void *interface::command(service_params_t *params)
       discovery::leave(params);
     
     if (command_values.front().compare(CMD_REFRESH) == 0)
+    {
+      params->station_table->has_update = true;
+      params->logger->has_changes = true;
       params->ui_lock.unlock();
+    }
 
     goto_input();
     cout << flush;
