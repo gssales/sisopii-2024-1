@@ -291,7 +291,7 @@ void StationTable::update(std::string key, StationStatus new_status, StationType
   }
 }
 
-void StationTable::update_retry(std::string key, u_int8_t retry_counter)
+void StationTable::update_retry(std::string key, uint8_t retry_counter)
 {
   if (this->has(key))
   {

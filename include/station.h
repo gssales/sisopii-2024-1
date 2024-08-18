@@ -116,8 +116,8 @@ struct station_serial
 */
 struct station_item
 {
-  u_int64_t last_update;
-  u_int8_t retry_counter;
+  uint64_t last_update;
+  uint8_t retry_counter;
 };
 
 class StationTable
@@ -144,7 +144,7 @@ class StationTable
     void insert(std::string key, station_serial item);
     void remove(std::string key);
     void update(std::string key, StationStatus new_status, StationType new_type);
-    void update_retry(std::string key, u_int8_t retry_counter);
+    void update_retry(std::string key, uint8_t retry_counter);
 };
 
 #endif
