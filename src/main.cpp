@@ -8,6 +8,7 @@
 #include "include/network.h"
 #include "include/discovery.h"
 #include "include/monitoring.h"
+#include "include/election.h"
 #include "include/interface.h"
 #include "include/utils.h"
 #include "include/options_parser.h"
@@ -60,6 +61,7 @@ int main(int argc, const char *argv[]) {
 	auto tcp_thread = std::thread(&network::tcp_server, &params);
 	auto discovery_thread = std::thread(&discovery::service,&params);
 	auto monitoring_thread = std::thread(&monitoring::service,&params);
+	auto election_thread = std::thread(&election::service,&params);
 	auto interface_thread = std::thread(&interface::interface,&params);
 	auto command_thread = std::thread(&interface::command,&params);
 
@@ -69,6 +71,7 @@ int main(int argc, const char *argv[]) {
 	tcp_thread.join();
 	discovery_thread.join();
 	monitoring_thread.join();
+	election_thread.join();
 	interface_thread.join();
 	command_thread.join();
 

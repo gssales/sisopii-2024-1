@@ -23,7 +23,11 @@ namespace network
 		MONITORING_RESPONSE,
 		LEAVING,
 		REPLICATION_REQUEST,
-		REPLICATION_RESPONSE
+		REPLICATION_RESPONSE,
+		ONLINE,
+		ELECTION_REQUEST,
+		ELECTION_RESPONSE,
+		ELECTION_VICTORY,
 	};
 
 	enum RequestStatus: unsigned short
@@ -32,6 +36,7 @@ namespace network
 		SUCCESS,
 		FAIL
 	};
+	std::string RequestStatus_to_string(RequestStatus status);
 
   typedef struct packet
   {

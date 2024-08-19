@@ -60,7 +60,7 @@ void monitoring::proc_manager(service_params_t *params)
     if (stations.size() > 0)
     {
       auto monitoring_request =  network::create_packet(network::MONITORING_REQUEST, station->serialize());
-      auto future_responses = network::multicast(stations, monitoring_request, params->logger, params->options);
+      auto future_responses = network::multicast(stations, monitoring_request, logger, params->options);
       auto responses = future_responses.get();
       for (auto &response : responses)
       {	

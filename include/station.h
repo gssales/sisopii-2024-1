@@ -57,6 +57,7 @@ private:
   void findMacAddress();
 
 public:
+  uint8_t retry_counter_manager;
   bool has_update;
   
   Station() {

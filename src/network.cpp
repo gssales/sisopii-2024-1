@@ -12,6 +12,7 @@
 #include "include/discovery.h"
 #include "include/monitoring.h"
 #include "include/replication.h"
+#include "include/election.h"
 #include "include/utils.h"
 #include <unistd.h>
 
@@ -38,7 +39,7 @@ std::string MessageType_to_string(MessageType type)
   }
 }
 
-std::string RequestStatus_to_string(RequestStatus status)
+std::string network::RequestStatus_to_string(RequestStatus status)
 {
   switch (status)
   {
@@ -128,6 +129,12 @@ void *network::tcp_server(service_params_t *params)
 				case REPLICATION_REQUEST:
 				case REPLICATION_RESPONSE:
 					tcp_call_resolve(client_sockfd, client_addr, params, client_data, replication::process_request);
+					break;
+          
+				case ELECTION_REQUEST:
+				case ELECTION_RESPONSE:
+				case ELECTION_VICTORY:
+					tcp_call_resolve(client_sockfd, client_addr, params, client_data, election::process_request_tcp);
 					break;
         
         default:
@@ -240,6 +247,10 @@ void *network::udp_server(service_params_t *params)
 			case LEAVING:
 				udp_call_resolve(sockfd, client_addr, params, client_data, discovery::process_request);
 				break;
+
+      case ONLINE:
+        udp_call_resolve(sockfd, client_addr, params, client_data, election::process_request_udp);
+        break;
 			
 			default:
 				break;

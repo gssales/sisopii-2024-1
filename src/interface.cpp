@@ -65,10 +65,12 @@ void print_row(std::pair<station_serial, station_item> station, bool current, op
   if (station.first.type == MANAGER)
     type = " *";
   else if (station.first.type == CANDIDATE)
+  {
     if (station.first.status == ELECTING)
       type = " !";
     else
       type = " ?";
+  }
 
   auto host = station.first;
   auto host_info = station.second;

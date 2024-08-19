@@ -5,6 +5,7 @@
 #include <chrono>
 
 #include "include/replication.h"
+#include "include/election.h"
 
 using namespace discovery;
 
@@ -50,6 +51,18 @@ void discovery::proc_host(service_params_t *params)
 			Station::deserialize(manager, response.station);
 			station->SetManager(manager);
 			params->ui_lock.unlock();
+		}
+		else {
+			auto max_retries = get_option(options, OPT_RETRY, 2);
+			station->retry_counter_manager++;
+			if (station->retry_counter_manager >= max_retries)
+			{
+				station->retry_counter_manager = 0;
+				election::start_election(params);
+				params->logger->info("table changed? "+std::to_string(params->station_table->table.size())+" "+std::to_string(params->station_table->has_update));
+				std::this_thread::sleep_for(std::chrono::seconds(1));
+				params->ui_lock.unlock();
+			}
 		}
 	}
 	int sleep = get_option(options, OPT_SLEEP, 5);
