@@ -84,7 +84,7 @@ void *network::tcp_server(service_params_t *params)
   auto options = params->options;
   auto station = params->station;
   auto logger = params->logger;
-  
+
   int timeout = get_option(options, OPT_TIMEOUT, 1); // default 1 second
   int sockfd = open_socket(SOCK_STREAM, timeout, logger);
 	if (sockfd == -1)
@@ -119,6 +119,13 @@ void *network::tcp_server(service_params_t *params)
       int n = read(client_sockfd, &client_data, sizeof(struct packet));
       if (n > 0)
       {
+        int diff = now() - client_data.timestamp;
+        if (diff >= 2*timeout*1000)
+        {
+          close(client_sockfd);
+          continue;
+        }
+
         switch (client_data.type)
         {
         case MONITORING_REQUEST:
@@ -237,6 +244,10 @@ void *network::udp_server(service_params_t *params)
     int n = recvfrom(sockfd, &client_data, sizeof(packet_t), 0, (struct sockaddr *) &client_addr, &client_addr_len);
     if (n > 0)
     {
+      int diff = now() - client_data.timestamp;
+      if (diff >= 2*timeout*1000)
+        continue;
+
 			if (client_addr.sin_addr.s_addr == station->GetInAddr())
 				continue;
 

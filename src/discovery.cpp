@@ -50,6 +50,7 @@ void discovery::proc_host(service_params_t *params)
 			auto manager = new Station();
 			Station::deserialize(manager, response.station);
 			station->SetManager(manager);
+			std::this_thread::sleep_for(std::chrono::seconds(1));
 			params->ui_lock.unlock();
 		}
 		else {
@@ -59,7 +60,6 @@ void discovery::proc_host(service_params_t *params)
 			{
 				station->retry_counter_manager = 0;
 				election::start_election(params);
-				params->logger->info("table changed? "+std::to_string(params->station_table->table.size())+" "+std::to_string(params->station_table->has_update));
 				std::this_thread::sleep_for(std::chrono::seconds(1));
 				params->ui_lock.unlock();
 			}
@@ -81,13 +81,14 @@ void *discovery::process_request(service_params_t *params, packet_t data, std::f
 	{
 		if (data.type == network::DISCOVERY_REQUEST)
 		{
-			station_table->insert(data.station.hostname, data.station);
-			replication::replicate(params, "Station inserted");
-			params->ui_lock.unlock();
-
 			auto response = network::create_packet(network::DISCOVERY_RESPONSE, station->serialize(), station->GetClock());
 			response.status = network::SUCCESS;
 			resolve(response);
+
+			station_table->insert(data.station.hostname, data.station);
+			std::this_thread::sleep_for(std::chrono::seconds(1));
+			replication::replicate(params, "Station inserted");
+			params->ui_lock.unlock();
 		}
 		else if (data.type == network::LEAVING)
 		{	
@@ -102,6 +103,7 @@ void *discovery::process_request(service_params_t *params, packet_t data, std::f
 		if (data.type == network::LEAVING && station->GetManager() != NULL && station->GetManager()->GetMacAddress().compare(data.station.macAddress) == 0)
 		{
 			station->SetManager(NULL);
+			std::this_thread::sleep_for(std::chrono::seconds(1));
 			params->ui_lock.unlock();
 		}
 	}
@@ -111,6 +113,11 @@ void *discovery::process_request(service_params_t *params, packet_t data, std::f
 
 void discovery::leave(service_params_t *params)
 {
+	if (params->station->GetType() == MANAGER)
+	{
+		params->station_table->remove(params->station->GetHostname());
+		replication::replicate(params, "leaving");
+	}
   params->station->SetStatus(EXITING);
   auto leaving_message = network::create_packet(network::LEAVING, params->station->serialize());
   network::datagram(INADDR_BROADCAST, leaving_message, params->logger, params->options, false);

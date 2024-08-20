@@ -84,6 +84,8 @@ public:
   StationType GetType() const { return this->type; }
   void SetType(StationType type);
 
+  unsigned int GetPid() const { return this->pid; }
+
   in_addr_t GetInAddr() const { return this->s_addr; }
 
   std::string GetHostname() const { return this->hostname; }

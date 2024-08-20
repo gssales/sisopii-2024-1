@@ -134,6 +134,7 @@ void Station::print()
 std::string Station::to_string()
 {
   std::string str = "Pid: " + std::to_string(this->pid) + ";";
+  str += "Type: " + StationType_to_string(this->type) + ";";
   str += "Hostname: " + this->hostname + ";";
   str += "MAC Address: " + this->macAddress + ";";
   str += "Interface: " + this->interface + ";";

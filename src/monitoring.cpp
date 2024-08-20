@@ -3,6 +3,7 @@
 #include <iostream>
 #include <thread>
 #include "include/replication.h"
+#include "include/election.h"
 #include "include/utils.h"
 
 using namespace monitoring;
@@ -70,15 +71,20 @@ void monitoring::proc_manager(service_params_t *params)
         if (packet.status == network::SUCCESS)
         {
           station_table->update_retry(hostname, true);
-          station_table->update(hostname, AWAKEN, host.type);
+          station_table->update(hostname, AWAKEN, StationType::HOST);
           replication::replicate(params, "Host awaken");
           params->ui_lock.unlock();
+
+          if (host.pid > station->GetPid())
+            election::start_election(params);
         } 
         else if (host.status != ASLEEP) 
         {
           uint8_t retry_counter = station_table->update_retry(hostname, false);
           if (retry_counter >= max_retry)
-            station_table->update(hostname, ASLEEP, host.type);
+            station_table->update(hostname, ASLEEP, StationType::HOST);
+          else
+            station_table->update(hostname, host.status, StationType::HOST);
           replication::replicate(params, "Host asleep");
           params->ui_lock.unlock();
         }
@@ -101,6 +107,7 @@ void *monitoring::process_request(service_params_t *params, packet_t data, std::
       auto response = network::create_packet(network::MONITORING_RESPONSE, station->serialize(), station->GetClock());
       response.status = network::SUCCESS;
       resolve(response);
+      params->ui_lock.unlock();
 			return 0;
     }
 	}

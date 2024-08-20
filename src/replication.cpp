@@ -10,7 +10,7 @@ void replication::replicate(service_params_t *params, const std::string& payload
 {
 	auto station = params->station;
 	auto station_table = params->station_table;
-	if (station->GetType() == MANAGER && station_table->has_update)
+	if (station->GetType() == MANAGER)
 	{
 		station_table->mutex.lock();
 		auto replication_request = network::create_packet(MessageType::REPLICATION_REQUEST, station->serialize(), station_table->clock, 0, payload);
@@ -64,16 +64,17 @@ void *replication::process_request(service_params_t *params, packet_t data, std:
 
 	if (station->GetType() == HOST)
 	{
-		if (station->GetManager() == NULL || station->GetManager()->GetMacAddress().compare(data.station.macAddress) == 0)
+		if (station->GetManager() != NULL && station->GetManager()->GetMacAddress().compare(data.station.macAddress) == 0)
 		{
 			if (data.type == MessageType::REPLICATION_REQUEST && data.clock > station_table->clock)
 			{
-				StationTable::deserialize(station_table, data.table, data.table_size, data.clock);
-				params->ui_lock.unlock();
-
 				auto response = network::create_packet(MessageType::REPLICATION_RESPONSE, station->serialize(), station_table->clock, 0);
 				response.status = network::SUCCESS;
 				resolve(response);
+
+				StationTable::deserialize(station_table, data.table, data.table_size, data.clock);
+    		std::this_thread::sleep_for(std::chrono::seconds(1));
+				params->ui_lock.unlock();
 				return 0;
 			}
 		}

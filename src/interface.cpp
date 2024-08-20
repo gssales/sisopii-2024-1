@@ -59,19 +59,8 @@ void header()
   cout << endl;
 }
 
-void print_row(std::pair<station_serial, station_item> station, bool current, options_t *options)
+void print_row(std::string type, std::pair<station_serial, station_item> station, bool current, options_t *options)
 {
-  std::string type = "  ";
-  if (station.first.type == MANAGER)
-    type = " *";
-  else if (station.first.type == CANDIDATE)
-  {
-    if (station.first.status == ELECTING)
-      type = " !";
-    else
-      type = " ?";
-  }
-
   auto host = station.first;
   auto host_info = station.second;
   
@@ -94,6 +83,51 @@ void print_row(std::pair<station_serial, station_item> station, bool current, op
   }
   else
     print_cell(StationStatus_to_string(host.status), 20);
+  if (current)
+    cout << RESET;
+  cout << endl;
+}
+
+void print_row(std::pair<station_serial, station_item> station, bool current, options_t *options)
+{
+  std::string type = "  ";
+  if (station.first.type == MANAGER)
+    type = " *";
+  else if (station.first.type == CANDIDATE)
+  {
+    if (station.first.status == ELECTING)
+      type = " !";
+    else
+      type = " ?";
+  }
+
+  print_row(type, station, current, options);
+}
+
+void print_row(Station *station, bool current)
+{ 
+  std::string type = "  ";
+  if (station->GetType() == MANAGER)
+    type = " *";
+  else if (station->GetType() == CANDIDATE)
+  {
+    if (station->GetStatus() == ELECTING)
+      type = " !";
+    else
+      type = " ?";
+  }
+
+  if (current)
+    cout << YELLOW_FG;
+  print_cell(type, 3);
+  if (current)
+    print_cell("["+station->GetHostname()+"]", 30);
+  else
+    print_cell(station->GetHostname(), 30);
+  print_cell(station->GetPid(), 8);
+  print_cell(station->GetMacAddress(), 20);
+  print_cell(station->GetIpAddress(), 20);
+  print_cell(StationStatus_to_string(station->GetStatus()), 20);
   if (current)
     cout << RESET;
   cout << endl;
@@ -122,20 +156,55 @@ void *interface::interface(service_params_t *params)
   while (station->GetStatus() != EXITING) 
   {
     params->ui_lock.lock();
-    if (station_table->has_update)
+    if (station->GetType() == MANAGER || (station->GetType() == HOST && station->GetManager() == NULL))
     {
-      auto list = station_table->list(0);
-      station_table->mutex.lock();
+      if (station_table->has_update)
+      {
+        auto list = station_table->list(0);
+        station_table->mutex.lock();
+        for (int i = 0; i < 10; i++)
+          cout << "\033[" << (3+i) << ";1H \033[K" << endl;
+        
+        gotoxy(1, 3);
+        for (auto &host_pair : list)
+          print_row(host_pair, station->GetMacAddress().compare(host_pair.first.macAddress) == 0, options);
+        goto_input();
+
+        station_table->has_update = false;
+        station_table->mutex.unlock();
+      }
+    }
+    else if (station->GetType() == HOST)
+    {
+      if (station_table->has_update)
+      {
+        auto manager = station->GetManager();
+        auto list = station_table->list(0);
+        station_table->mutex.lock();
+        for (int i = 0; i < 10; i++)
+          cout << "\033[" << (3+i) << ";1H \033[K" << endl;
+        
+        gotoxy(1, 3);
+        for (auto &host_pair : list)
+        {
+          auto type = "  ";
+          if (manager != NULL && manager->GetMacAddress().compare(host_pair.first.macAddress) == 0)
+            type = " *";
+          print_row(type, host_pair, station->GetMacAddress().compare(host_pair.first.macAddress) == 0, options);
+        }
+        goto_input();
+
+        station_table->has_update = false;
+        station_table->mutex.unlock();
+      }
+    }
+    else 
+    {
       for (int i = 0; i < 10; i++)
         cout << "\033[" << (3+i) << ";1H \033[K" << endl;
-      
       gotoxy(1, 3);
-      for (auto &host_pair : list)
-        print_row(host_pair, station->GetMacAddress().compare(host_pair.first.macAddress) == 0, options);
+      print_row(station, true);
       goto_input();
-
-      station_table->has_update = false;
-      station_table->mutex.unlock();
     }
 
     if (logger->has_changes)

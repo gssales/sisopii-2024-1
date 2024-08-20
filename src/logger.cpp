@@ -13,6 +13,8 @@ void Logger::info(std::string message)
 
 void Logger::error(std::string message, char* error) 
 {
+  if (!this->debug)
+    return;
   std::cerr << "ERROR " << message << error << std::endl;
   this->has_changes = true;
   this->ui_lock->unlock();
